@@ -266,7 +266,7 @@ img {
 
     letter-spacing: 4px;
 
-    font-size: 25px;
+    font-size: 35px;
 
     font-weight: 900;
 
@@ -277,13 +277,13 @@ img {
 /* Hero heading */
 
 .hero h1 {
-    font-size: clamp(42px, 6vw, 72px);
+    font-size: 30px;
 
-    line-height: 1.02;
+    line-height: 1;
 
     color: #ffffff;
 
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 
     text-shadow: 0 3px 18px rgba(0,0,0,0.55);
 }
@@ -1202,4 +1202,287 @@ h3 {
     .careers {
         padding: 70px 0;
     }
+}
+/* =========================================================
+   ABOUT IMAGE SLIDESHOW
+   ========================================================= */
+
+.slideshow-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+.slideshow {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    overflow: hidden;
+    border-radius: 14px;
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.45s ease;
+}
+
+.slide.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 1;
+}
+
+.slide img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+
+/* PREVIOUS / NEXT */
+
+.slide-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+
+    width: 44px;
+    height: 44px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(20, 20, 20, 0.72);
+    color: #ffffff;
+
+    font-size: 24px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: 0.25s ease;
+}
+
+.slide-button:hover {
+    background: var(--orange);
+}
+
+.slide-prev {
+    left: 15px;
+}
+
+.slide-next {
+    right: 15px;
+}
+
+
+/* DOTS */
+
+.slide-dots {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    z-index: 5;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    padding: 8px 12px;
+
+    border-radius: 30px;
+
+    background: rgba(20, 20, 20, 0.60);
+}
+
+.slide-dots button {
+    width: 8px;
+    height: 8px;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.60);
+
+    cursor: pointer;
+
+    transition: 0.25s ease;
+}
+
+.slide-dots button.active {
+    width: 22px;
+    border-radius: 10px;
+    background: var(--orange);
+}
+
+
+/* =========================================================
+   HEADER COMPANY NAME
+   ========================================================= */
+
+.logo-name {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.05;
+    white-space: nowrap;
+}
+
+.logo-name strong {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+}
+
+.logo-name small {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+}
+
+
+/* =========================================================
+   OFFICE MAP LINK
+   ========================================================= */
+
+.address-map-link {
+    display: block;
+    line-height: 1.6;
+    text-decoration: none;
+}
+
+.map-link {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 12px;
+
+    color: var(--orange-light) !important;
+
+    font-weight: 700;
+    text-decoration: none;
+
+    transition: 0.25s ease;
+}
+
+.map-link:hover {
+    color: var(--dark-grey) !important;
+    transform: translateX(2px);
+}
+
+.map-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+
+/* =========================================================
+   MOBILE SLIDESHOW
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .slideshow {
+        min-height: 300px;
+        height: 300px;
+    }
+
+    .slide-button {
+        width: 40px;
+        height: 40px;
+        font-size: 21px;
+    }
+
+    .slide-prev {
+        left: 10px;
+    }
+
+    .slide-next {
+        right: 10px;
+    }
+
+    .slide-dots {
+        bottom: 10px;
+        gap: 5px;
+    }
+
+    .slide-dots button {
+        width: 7px;
+        height: 7px;
+    }
+
+    .slide-dots button.active {
+        width: 18px;
+    }
+
+
+    /* HEADER */
+
+    .logo {
+        gap: 8px;
+    }
+
+    .logo img {
+        height: 42px;
+        width: auto;
+    }
+
+    .logo-name strong {
+        font-size: 15px;
+    }
+
+    .logo-name small {
+        font-size: 10px;
+        letter-spacing: 1px;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE PHONES
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .logo img {
+        height: 38px;
+    }
+
+    .logo-name strong {
+        font-size: 14px;
+    }
+
+    .logo-name small {
+        font-size: 9px;
+        letter-spacing: 0.8px;
+    }
+
+    .slideshow {
+        min-height: 250px;
+        height: 250px;
+    }
+
 }
