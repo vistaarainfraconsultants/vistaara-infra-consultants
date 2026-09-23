@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vistaarainfraconsultants.github.io/vistaara-infra-consultants/sitemap.xml
