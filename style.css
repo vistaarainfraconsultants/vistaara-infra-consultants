@@ -125,6 +125,12 @@ img {
     display: block;
 }
 
+.logo span {
+    color: var(--orange-dark);
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+}
 
 /* NAVIGATION */
 
