@@ -1,9 +1,17 @@
 /* =========================================================
+   VISTAARA INFRA CONSULTANTS
+   MAIN JAVASCRIPT
+========================================================= */
+
+
+/* =========================================================
    MOBILE MENU
-   ========================================================= */
+========================================================= */
 
 const menuToggle = document.querySelector('.menu-toggle');
+
 const nav = document.querySelector('.nav');
+
 
 if (menuToggle && nav) {
 
@@ -11,19 +19,41 @@ if (menuToggle && nav) {
 
         nav.classList.toggle('open');
 
+
+        const isOpen =
+            nav.classList.contains('open');
+
+
+        menuToggle.setAttribute(
+            'aria-expanded',
+            isOpen
+        );
+
     });
 
 }
 
 
-/* Close mobile menu after clicking a navigation link */
+/* Close mobile menu after clicking navigation link */
 
 document.querySelectorAll('.nav a').forEach(link => {
 
     link.addEventListener('click', () => {
 
         if (nav) {
+
             nav.classList.remove('open');
+
+        }
+
+
+        if (menuToggle) {
+
+            menuToggle.setAttribute(
+                'aria-expanded',
+                'false'
+            );
+
         }
 
     });
@@ -31,43 +61,61 @@ document.querySelectorAll('.nav a').forEach(link => {
 });
 
 
+
 /* =========================================================
    FOOTER YEAR
-   ========================================================= */
+========================================================= */
 
-const yearElement = document.getElementById('year');
+const yearElement =
+    document.getElementById('year');
+
 
 if (yearElement) {
 
-    yearElement.textContent = new Date().getFullYear();
+    yearElement.textContent =
+        new Date().getFullYear();
 
 }
 
 
+
 /* =========================================================
    ABOUT IMAGE SLIDESHOW
-   ========================================================= */
+========================================================= */
 
-const slides = document.querySelectorAll('.slide');
+const slides =
+    document.querySelectorAll('.slide');
 
-const previousButton = document.querySelector('.slide-prev');
 
-const nextButton = document.querySelector('.slide-next');
+const previousButton =
+    document.querySelector('.slide-prev');
 
-const dots = document.querySelectorAll('.slide-dots button');
+
+const nextButton =
+    document.querySelector('.slide-next');
+
+
+const dots =
+    document.querySelectorAll('.slide-dots button');
 
 
 let currentSlide = 0;
 
 
-/* ---------------------------------------------------------
+let slideshowTimer = null;
+
+
+
+/* =========================================================
    SHOW SLIDE
-   --------------------------------------------------------- */
+========================================================= */
 
 function showSlide(index) {
 
     if (!slides.length) {
+
         return;
+
     }
 
 
@@ -77,18 +125,23 @@ function showSlide(index) {
 
         currentSlide = 0;
 
-    } else if (index < 0) {
+    }
 
-        currentSlide = slides.length - 1;
+    else if (index < 0) {
 
-    } else {
+        currentSlide =
+            slides.length - 1;
+
+    }
+
+    else {
 
         currentSlide = index;
 
     }
 
 
-    /* Remove active class from every slide */
+    /* Remove active from all slides */
 
     slides.forEach((slide) => {
 
@@ -97,9 +150,10 @@ function showSlide(index) {
     });
 
 
-    /* Add active class to current slide */
+    /* Activate selected slide */
 
-    slides[currentSlide].classList.add('active');
+    slides[currentSlide]
+        .classList.add('active');
 
 
     /* Update dots */
@@ -116,133 +170,146 @@ function showSlide(index) {
 }
 
 
+
 /* =========================================================
    NEXT SLIDE
-   ========================================================= */
+========================================================= */
 
 function nextSlide() {
 
-    showSlide(currentSlide + 1);
+    showSlide(
+        currentSlide + 1
+    );
 
 }
+
 
 
 /* =========================================================
    PREVIOUS SLIDE
-   ========================================================= */
+========================================================= */
 
 function previousSlide() {
 
-    showSlide(currentSlide - 1);
-
-}
-
-
-/* =========================================================
-   PREVIOUS BUTTON
-   ========================================================= */
-
-if (previousButton) {
-
-    previousButton.addEventListener(
-        'click',
-        previousSlide
+    showSlide(
+        currentSlide - 1
     );
 
 }
 
 
-/* =========================================================
-   NEXT BUTTON
-   ========================================================= */
-
-if (nextButton) {
-
-    nextButton.addEventListener(
-        'click',
-        nextSlide
-    );
-
-}
-
 
 /* =========================================================
-   DOT BUTTONS
-   ========================================================= */
-
-dots.forEach((dot, index) => {
-
-    dot.addEventListener('click', () => {
-
-        showSlide(index);
-
-        restartSlideshow();
-
-    });
-
-});
-
-
-/* =========================================================
-   AUTOMATIC SLIDESHOW
-   Changes every 1 second
-   ========================================================= */
-
-let slideshowTimer;
-
+   START SLIDESHOW
+========================================================= */
 
 function startSlideshow() {
+
+    if (!slides.length) {
+
+        return;
+
+    }
+
+
+    clearInterval(
+        slideshowTimer
+    );
+
 
     slideshowTimer = setInterval(() => {
 
         nextSlide();
 
-    }, 2500);
+    }, 1500);
 
 }
 
 
+
 /* =========================================================
-   RESTART AUTOMATIC SLIDESHOW
-   Used after Previous / Next / Dot click
-   ========================================================= */
+   RESTART SLIDESHOW
+========================================================= */
 
 function restartSlideshow() {
 
-    clearInterval(slideshowTimer);
+    clearInterval(
+        slideshowTimer
+    );
+
 
     startSlideshow();
 
 }
 
 
-/* Restart timer when manually using Previous */
+
+/* =========================================================
+   PREVIOUS BUTTON
+========================================================= */
 
 if (previousButton) {
 
     previousButton.addEventListener(
         'click',
-        restartSlideshow
+        () => {
+
+            previousSlide();
+
+            restartSlideshow();
+
+        }
     );
 
 }
 
 
-/* Restart timer when manually using Next */
+
+/* =========================================================
+   NEXT BUTTON
+========================================================= */
 
 if (nextButton) {
 
     nextButton.addEventListener(
         'click',
-        restartSlideshow
+        () => {
+
+            nextSlide();
+
+            restartSlideshow();
+
+        }
     );
 
 }
 
 
+
+/* =========================================================
+   DOT BUTTONS
+========================================================= */
+
+dots.forEach((dot, index) => {
+
+    dot.addEventListener(
+        'click',
+        () => {
+
+            showSlide(index);
+
+            restartSlideshow();
+
+        }
+    );
+
+});
+
+
+
 /* =========================================================
    INITIALIZE SLIDESHOW
-   ========================================================= */
+========================================================= */
 
 if (slides.length) {
 
@@ -251,3 +318,283 @@ if (slides.length) {
     startSlideshow();
 
 }
+
+
+
+/* =========================================================
+   CAREER POSITION DETAILS
+========================================================= */
+
+const jobCards =
+    document.querySelectorAll('.job-card');
+
+
+jobCards.forEach(card => {
+
+
+    const toggle =
+        card.querySelector(
+            '.job-details-toggle'
+        );
+
+
+    const details =
+        card.querySelector(
+            '.job-details'
+        );
+
+
+    if (!toggle || !details) {
+
+        return;
+
+    }
+
+
+    toggle.addEventListener(
+        'click',
+        () => {
+
+            const isOpen =
+                card.classList.contains(
+                    'details-open'
+                );
+
+
+            /* Close this position */
+
+            if (isOpen) {
+
+                card.classList.remove(
+                    'details-open'
+                );
+
+
+                toggle.setAttribute(
+                    'aria-expanded',
+                    'false'
+                );
+
+            }
+
+
+            /* Open this position */
+
+            else {
+
+                card.classList.add(
+                    'details-open'
+                );
+
+
+                toggle.setAttribute(
+                    'aria-expanded',
+                    'true'
+                );
+
+            }
+
+        }
+    );
+
+});
+
+
+
+/* =========================================================
+   GALLERY
+========================================================= */
+
+/*
+   IMPORTANT:
+
+   Put gallery images inside:
+
+   images/
+
+   Use names such as:
+
+   Gallery 01.jpg
+   Gallery 02.jpg
+   Gallery 03.jpeg
+   Gallery 04.png
+   Gallery 05.webp
+
+   The script checks Gallery 01 to Gallery 50.
+
+   Missing files are automatically ignored.
+*/
+
+
+const galleryGrid =
+    document.getElementById(
+        'gallery-grid'
+    );
+
+
+const galleryEmpty =
+    document.getElementById(
+        'gallery-empty'
+    );
+
+
+
+if (galleryGrid) {
+
+
+    const galleryExtensions = [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp'
+    ];
+
+
+    const galleryMaximum =
+        50;
+
+
+    let galleryFound = 0;
+
+
+
+    /*
+       Create image element
+       after checking whether
+       the file actually exists.
+    */
+
+    function checkGalleryImage(
+        number,
+        extension
+    ) {
+
+        const imagePath =
+            `images/Gallery ${String(number).padStart(2, '0')}.${extension}`;
+
+
+        const image =
+            new Image();
+
+
+        image.onload = function () {
+
+            /* Prevent duplicate image numbers */
+
+            if (
+                document.querySelector(
+                    `[data-gallery-number="${number}"]`
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            const galleryItem =
+                document.createElement(
+                    'div'
+                );
+
+
+            galleryItem.className =
+                'gallery-item';
+
+
+            galleryItem.setAttribute(
+                'data-gallery-number',
+                number
+            );
+
+
+            const galleryImage =
+                document.createElement(
+                    'img'
+                );
+
+
+            galleryImage.src =
+                imagePath;
+
+
+            galleryImage.alt =
+                `Vistaara Infra Consultants Gallery ${number}`;
+
+
+            galleryImage.loading =
+                'lazy';
+
+
+            galleryItem.appendChild(
+                galleryImage
+            );
+
+
+            galleryGrid.appendChild(
+                galleryItem
+            );
+
+
+            galleryFound++;
+
+
+            if (galleryEmpty) {
+
+                galleryEmpty.style.display =
+                    'none';
+
+            }
+
+        };
+
+
+        /*
+           If the file doesn't exist,
+           nothing is added.
+        */
+
+        image.onerror = function () {
+
+            /* Do nothing */
+
+        };
+
+
+        image.src =
+            imagePath;
+
+    }
+
+
+
+    /*
+       Check Gallery 01 to Gallery 50
+    */
+
+    for (
+        let number = 1;
+        number <= galleryMaximum;
+        number++
+    ) {
+
+        galleryExtensions.forEach(
+            extension => {
+
+                checkGalleryImage(
+                    number,
+                    extension
+                );
+
+            }
+        );
+
+    }
+
+}
+
+
+
+/* =========================================================
+   END OF SCRIPT
+========================================================= */
