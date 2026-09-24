@@ -390,7 +390,7 @@ button {
 
     gap: 0;
 
-    color: var(--orange-light);
+    color: var(--white);
 
     font-size: 30px;
 
@@ -398,7 +398,7 @@ button {
 
     letter-spacing: 3px;
 
-    margin-bottom: 18px;
+    margin-bottom: 0px;
 
 }
 
@@ -421,7 +421,7 @@ button {
 
     line-height: 1.05;
     
-    margin-bottom: 22px;
+    margin-bottom: 10px;
 
 }
 
@@ -429,7 +429,7 @@ button {
 .hero h1 span {
 
     color:
-        var(--orange-light);
+        var(--white);
 
 }
 
@@ -438,9 +438,11 @@ button {
 
     font-size: 21px;
 
+    color: var(--light-orange);
+
     font-weight: 700;
 
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 
 }
 
@@ -528,7 +530,7 @@ button {
 }
 
 
-.button-outline {
+.button-orange-outline {
 
     border:
         1px solid
@@ -545,13 +547,66 @@ button {
 }
 
 
-.button-outline:hover {
+.button-orange-outline:hover {
 
     background:
         var(--white);
 
     color:
         var(--dark-grey);
+
+}
+
+
+
+.button-grey {
+
+    background:
+        var(--light-grey);
+
+    color:
+        var(--orange-dark);
+
+}
+
+
+.button-grey:hover {
+
+    background:
+        var(--dark-grey);
+
+    color:
+        var(--white);
+    transform:
+        translateY(-2px);
+
+}
+
+
+.button-grey-outline {
+
+    border:
+        1px solid
+        rgba(
+            255,
+            255,
+            255,
+            0.8
+        );
+
+    color:
+        var(--white);
+
+}
+
+
+.button-grey-outline:hover {
+
+    background:
+        var(--dark-grey);
+
+    color:
+        var(--white);
 
 }
 
@@ -1362,71 +1417,121 @@ button {
    GALLERY
 ========================================================= */
 
-.gallery-grid {
+.gallery-wrapper {
+    position: relative;
+    width: 100%;
+}
 
+
+#gallery-grid {
     display: grid;
 
+    /*
+       4 columns
+       2 rows
+    */
+
     grid-template-columns:
-        repeat(3, 1fr);
+        repeat(4, 1fr);
 
-    gap: 18px;
+    grid-template-rows:
+        repeat(2, 1fr);
 
+    gap: 20px;
+
+    width: 100%;
 }
 
 
 .gallery-item {
+    width: 100%;
 
-    height: 280px;
+    aspect-ratio: 16 / 10;
 
     overflow: hidden;
 
-    border-radius: 10px;
+    border-radius: 12px;
 
-    background:
-        var(--dark-grey);
-
-    position: relative;
-
+    background: #f1f1f1;
 }
 
 
 .gallery-item img {
+    display: block;
 
     width: 100%;
-
     height: 100%;
 
     object-fit: cover;
 
-    display: block;
-
     transition:
-        transform 0.35s ease;
-
+        transform 0.4s ease;
 }
 
 
 .gallery-item:hover img {
-
-    transform:
-        scale(1.05);
-
+    transform: scale(1.05);
 }
 
 
-.gallery-empty {
 
-    display: none;
+/* =========================================================
+   GALLERY NAVIGATION
+========================================================= */
 
-    padding: 30px;
+.gallery-navigation {
 
-    text-align: center;
+    display: flex;
 
-    color:
-        var(--muted);
+    justify-content: center;
 
+    align-items: center;
+
+    gap: 15px;
+
+    margin-top: 25px;
 }
 
+
+.gallery-prev,
+.gallery-next {
+
+    width: 45px;
+
+    height: 45px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: #333;
+
+    color: #fff;
+
+    font-size: 22px;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    transition:
+        background 0.3s ease,
+        transform 0.3s ease;
+}
+
+
+.gallery-prev:hover,
+.gallery-next:hover {
+
+    background: #e8751a;
+
+    transform: scale(1.08);
+
+}
 
 /* =========================================================
    TEAM

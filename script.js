@@ -205,17 +205,9 @@ function previousSlide() {
 
 function startSlideshow() {
 
-    if (!slides.length) {
-
+    if (slideshowTimer) {
         return;
-
     }
-
-
-    clearInterval(
-        slideshowTimer
-    );
-
 
     slideshowTimer = setInterval(() => {
 
@@ -315,7 +307,41 @@ if (slides.length) {
 
     showSlide(0);
 
-    startSlideshow();
+    const slideshowObserver = new IntersectionObserver(
+        (entries) => {
+
+            entries.forEach((entry) => {
+
+                if (entry.isIntersecting) {
+
+                    // Start sliding only when the slideshow
+                    // is visible on the screen
+                    if (!slideshowTimer) {
+                        startSlideshow();
+                    }
+
+                } else {
+
+                    // Stop sliding when the section is no longer visible
+                    clearInterval(slideshowTimer);
+                    slideshowTimer = null;
+
+                }
+
+            });
+
+        },
+        {
+            threshold: 0.35
+        }
+    );
+
+    const slideshowContainer =
+        document.querySelector('.about-slideshow');
+
+    if (slideshowContainer) {
+        slideshowObserver.observe(slideshowContainer);
+    }
 
 }
 
@@ -402,45 +428,23 @@ jobCards.forEach(card => {
 
 
 /* =========================================================
-   GALLERY
+   GALLERY - 2 ROW × 4 COLUMN CAROUSEL
 ========================================================= */
 
-/*
-   IMPORTANT:
-
-   Put gallery images inside:
-
-   images/
-
-   Use names such as:
-
-   Gallery 01.jpg
-   Gallery 02.jpg
-   Gallery 03.jpeg
-   Gallery 04.png
-   Gallery 05.webp
-
-   The script checks Gallery 01 to Gallery 50.
-
-   Missing files are automatically ignored.
-*/
-
-
 const galleryGrid =
-    document.getElementById(
-        'gallery-grid'
-    );
-
+    document.getElementById('gallery-grid');
 
 const galleryEmpty =
-    document.getElementById(
-        'gallery-empty'
-    );
+    document.getElementById('gallery-empty');
 
+const galleryPrevious =
+    document.querySelector('.gallery-prev');
+
+const galleryNext =
+    document.querySelector('.gallery-next');
 
 
 if (galleryGrid) {
-
 
     const galleryExtensions = [
         'jpg',
@@ -449,32 +453,25 @@ if (galleryGrid) {
         'webp'
     ];
 
+    const galleryMaximum = 50;
 
-    const galleryMaximum =
-        50;
+    let galleryImages = [];
+
+    let galleryStart = 0;
+
+    let galleryTimer = null;
 
 
-    let galleryFound = 0;
+    /* =====================================================
+       CHECK GALLERY IMAGE
+    ===================================================== */
 
-
-
-    /*
-       Create image element
-       after checking whether
-       the file actually exists.
-    */
-
-    function checkGalleryImage(
-        number,
-        extension
-    ) {
+    function checkGalleryImage(number, extension) {
 
         const imagePath =
             `images/Gallery ${String(number).padStart(2, '0')}.${extension}`;
 
-
-        const image =
-            new Image();
+        const image = new Image();
 
 
         image.onload = function () {
@@ -482,95 +479,303 @@ if (galleryGrid) {
             /* Prevent duplicate image numbers */
 
             if (
-                document.querySelector(
-                    `[data-gallery-number="${number}"]`
+                galleryImages.some(
+                    item => item.number === number
                 )
             ) {
-
                 return;
-
             }
 
 
-            const galleryItem =
-                document.createElement(
-                    'div'
-                );
+            galleryImages.push({
+
+                number: number,
+
+                path: imagePath
+
+            });
 
 
-            galleryItem.className =
-                'gallery-item';
+            /* Keep images in numerical order */
 
-
-            galleryItem.setAttribute(
-                'data-gallery-number',
-                number
+            galleryImages.sort(
+                (a, b) => a.number - b.number
             );
 
 
-            const galleryImage =
-                document.createElement(
-                    'img'
-                );
-
-
-            galleryImage.src =
-                imagePath;
-
-
-            galleryImage.alt =
-                `Vistaara Infra Consultants Gallery ${number}`;
-
-
-            galleryImage.loading =
-                'lazy';
-
-
-            galleryItem.appendChild(
-                galleryImage
-            );
-
-
-            galleryGrid.appendChild(
-                galleryItem
-            );
-
-
-            galleryFound++;
-
+            /* Hide empty message */
 
             if (galleryEmpty) {
 
-                galleryEmpty.style.display =
-                    'none';
+                galleryEmpty.style.display = 'none';
 
             }
 
+
+            buildGallery();
+
         };
 
-
-        /*
-           If the file doesn't exist,
-           nothing is added.
-        */
 
         image.onerror = function () {
 
-            /* Do nothing */
+            /* Image does not exist - ignore */
 
         };
 
 
-        image.src =
-            imagePath;
+        image.src = imagePath;
 
     }
 
 
 
-    /*
-       Check Gallery 01 to Gallery 50
-    */
+    /* =====================================================
+       BUILD GALLERY
+    ===================================================== */
+
+    function buildGallery() {
+
+        galleryGrid.innerHTML = '';
+
+
+        if (galleryImages.length === 0) {
+
+            return;
+
+        }
+
+
+        /*
+           Create exactly 8 images.
+
+           Example:
+
+           Start = 0
+
+           01 02 03 04
+           05 06 07 08
+
+           Start = 1
+
+           02 03 04 05
+           06 07 08 09
+
+           Start = 2
+
+           03 04 05 06
+           07 08 09 10
+        */
+
+
+        for (let i = 0; i < 8; i++) {
+
+            /*
+               Circular gallery.
+
+               If we reach the last image,
+               continue again from Gallery 01.
+            */
+
+            const imageIndex =
+                (galleryStart + i) %
+                galleryImages.length;
+
+
+            const item =
+                galleryImages[imageIndex];
+
+
+            createGalleryItem(item);
+
+        }
+
+    }
+
+
+
+    /* =====================================================
+       CREATE IMAGE
+    ===================================================== */
+
+    function createGalleryItem(item) {
+
+        const galleryItem =
+            document.createElement('div');
+
+
+        galleryItem.className =
+            'gallery-item';
+
+
+        const galleryImage =
+            document.createElement('img');
+
+
+        galleryImage.src =
+            item.path;
+
+
+        galleryImage.alt =
+            `Vistaara Infra Consultants Gallery ${item.number}`;
+
+
+        galleryImage.loading =
+            'lazy';
+
+
+        galleryItem.appendChild(
+            galleryImage
+        );
+
+
+        galleryGrid.appendChild(
+            galleryItem
+        );
+
+    }
+
+
+
+    /* =====================================================
+       NEXT GALLERY
+    ===================================================== */
+
+    function nextGallery() {
+
+        if (galleryImages.length === 0) {
+
+            return;
+
+        }
+
+
+        /*
+           Move forward by ONE image
+        */
+
+        galleryStart =
+            (galleryStart + 1)
+            %
+            galleryImages.length;
+
+
+        buildGallery();
+
+    }
+
+
+
+    /* =====================================================
+       PREVIOUS GALLERY
+    ===================================================== */
+
+    function previousGallery() {
+
+        if (galleryImages.length === 0) {
+
+            return;
+
+        }
+
+
+        /*
+           Move backward by ONE image
+        */
+
+        galleryStart =
+            (
+                galleryStart -
+                1 +
+                galleryImages.length
+            )
+            %
+            galleryImages.length;
+
+
+        buildGallery();
+
+    }
+
+
+
+    /* =====================================================
+       AUTOMATIC ROTATION
+    ===================================================== */
+
+    function startGalleryRotation() {
+
+        clearInterval(
+            galleryTimer
+        );
+
+
+        if (galleryImages.length <= 8) {
+
+            return;
+
+        }
+
+
+        galleryTimer =
+            setInterval(
+                () => {
+
+                    nextGallery();
+
+                },
+                4000
+            );
+
+    }
+
+
+
+    /* =====================================================
+       NEXT BUTTON
+    ===================================================== */
+
+    if (galleryNext) {
+
+        galleryNext.addEventListener(
+            'click',
+            () => {
+
+                nextGallery();
+
+                startGalleryRotation();
+
+            }
+        );
+
+    }
+
+
+
+    /* =====================================================
+       PREVIOUS BUTTON
+    ===================================================== */
+
+    if (galleryPrevious) {
+
+        galleryPrevious.addEventListener(
+            'click',
+            () => {
+
+                previousGallery();
+
+                startGalleryRotation();
+
+            }
+        );
+
+    }
+
+
+
+    /* =====================================================
+       LOAD GALLERY 01 → 50
+    ===================================================== */
 
     for (
         let number = 1;
@@ -591,10 +796,30 @@ if (galleryGrid) {
 
     }
 
+
+
+    /* =====================================================
+       START AUTOMATIC ROTATION
+    ===================================================== */
+
+    /*
+       Give the images a moment to load,
+       then start automatic rotation.
+    */
+
+    setTimeout(
+        () => {
+
+            startGalleryRotation();
+
+        },
+        1000
+    );
+
 }
 
 
-
 /* =========================================================
-   END OF SCRIPT
+   END OF GALLERY
 ========================================================= */
+
