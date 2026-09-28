@@ -568,7 +568,7 @@ if (galleryGrid) {
         */
 
 
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 6; i++) {
 
             /*
                Circular gallery.
@@ -710,7 +710,7 @@ if (galleryGrid) {
         );
 
 
-        if (galleryImages.length <= 8) {
+        if (galleryImages.length <= 6) {
 
             return;
 

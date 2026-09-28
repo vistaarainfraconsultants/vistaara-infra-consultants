@@ -1427,12 +1427,12 @@ button {
     display: grid;
 
     /*
-       4 columns
+       3 columns
        2 rows
     */
 
     grid-template-columns:
-        repeat(4, 1fr);
+        repeat(3, 1fr);
 
     grid-template-rows:
         repeat(2, 1fr);
