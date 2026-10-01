@@ -399,10 +399,10 @@
 
 
 <!-- =========================================================
-     ABOUT VISTAARA + SLIDESHOW
+     ABOUT VISTAARA + AUTOMATIC MEDIA
 ========================================================= -->
 
-<section class="section section-light">
+<section class="section section-light" id="about-media-section">
 
     <div class="container two-column about-block">
 
@@ -412,7 +412,6 @@
                 About Vistaara
             </p>
 
-
             <h2>
                 Engineering with purpose.
             </h2>
@@ -421,7 +420,6 @@
                 Infrastructure with impact.
             </h2>
 
-
             <p>
                 Vistaara Infra Consultants is a multidisciplinary
                 civil engineering consultancy firm delivering
@@ -429,284 +427,52 @@
                 infrastructure lifecycle.
             </p>
 
-
             <p>
                 We focus on technically sound, practical and
                 cost-effective solutions while maintaining high
                 standards of quality on every assignment we take on.
             </p>
 
-
             <ul class="check-list">
-
-                <li>
-                    Concept through practical, buildable design
-                </li>
-
-                <li>
-                    Well-researched, practical and cost-effective outcomes
-                </li>
-
-                <li>
-                    High-quality planning, design and execution
-                    support across India
-                </li>
-
+                <li>Concept through practical, buildable design</li>
+                <li>Well-researched, practical and cost-effective outcomes</li>
+                <li>High-quality planning, design and execution support across India</li>
             </ul>
 
         </div>
 
+        <div class="about-media-stack">
 
+            <!-- ABOUT PHOTOS: automatically loaded from images/ by filename -->
+            <div class="about-image">
+                <div class="about-slideshow" id="about-photo-slideshow">
+                    <div class="about-media-empty" id="about-photo-empty">
+                        <p>No Project Discussion / Team Photo images found.</p>
+                    </div>
+                    <button class="slide-prev" type="button" aria-label="Previous About photo">‹</button>
+                    <button class="slide-next" type="button" aria-label="Next About photo">›</button>
+                    <div class="slide-dots" id="about-photo-dots"></div>
+                </div>
+            </div>
 
-        <!-- =====================================================
-             ABOUT IMAGE SLIDESHOW
-        ====================================================== -->
-
-        <div class="about-image">
-
-            <div class="about-slideshow">
-
-                <!-- IMAGE 01 -->
-
-                <div class="slide active">
-
-                    <img
-                        src="images/Project Discussion 01.png"
-                        alt="Vistaara Infra Consultants project discussion"
-                    >
-
+            <!-- ABOUT VIDEOS: automatically loaded from images/ by filename containing Video -->
+            <div class="about-video-section">
+                <div class="about-video-heading">
+                    <div>
+                        <p class="eyebrow">Project Videos</p>
+                        <h3>Vistaara in Motion</h3>
+                    </div>
                 </div>
 
-                <!-- IMAGE 02 -->
-
-                <div class="slide active">
-
-                    <img
-                        src="images/Project Discussion 02.png"
-                        alt="Vistaara Infra Consultants project discussion"
-                    >
-
+                <div class="about-video-slider" id="about-video-slider">
+                    <div class="about-video-empty" id="about-video-empty">
+                        <p>No videos found. Add a video file whose name contains <strong>Video</strong>.</p>
+                    </div>
+                    <video id="about-video-player" controls playsinline preload="metadata"></video>
+                    <button class="video-prev" type="button" aria-label="Previous video">‹</button>
+                    <button class="video-next" type="button" aria-label="Next video">›</button>
+                    <div class="video-caption" id="about-video-caption"></div>
                 </div>
-
-                <!-- IMAGE 03 -->
-
-                <div class="slide active">
-
-                    <img
-                        src="images/Project Discussion 03.jpeg"
-                        alt="Vistaara Infra Consultants project discussion"
-                    >
-
-                </div>
-
-                <!-- IMAGE 04 -->
-
-                <div class="slide active">
-
-                    <img
-                        src="images/Project Discussion 04.jpeg"
-                        alt="Vistaara Infra Consultants project discussion"
-                    >
-
-                </div>
-
-                <!-- IMAGE 05 -->
-
-                <div class="slide active">
-
-                    <img
-                        src="images/Project Discussion 05.jpeg"
-                        alt="Vistaara Infra Consultants project discussion"
-                    >
-
-                </div>
-
-                <!-- IMAGE 06 -->
-
-                <div class="slide active">
-
-                    <img
-                        src="images/Project Discussion 06.jpeg"
-                        alt="Vistaara Infra Consultants project discussion"
-                    >
-
-                </div>
-
-                <!-- IMAGE 07 -->
-
-                <div class="slide active">
-
-                    <img
-                        src="images/Project Discussion 07.jpeg"
-                        alt="Vistaara Infra Consultants project discussion"
-                    >
-
-                </div>
-
-                <!-- TEAM PHOTO 01 -->
-
-                <div class="slide">
-
-                    <img
-                        src="images/Team Photo 01.jpeg"
-                        alt="Vistaara Infra Consultants team"
-                    >
-
-                </div>
-
-
-                <!-- TEAM PHOTO 02 -->
-
-                <div class="slide">
-
-                    <img
-                        src="images/Team Photo 02.jpeg"
-                        alt="Vistaara Infra Consultants team"
-                    >
-
-                </div>
-
-
-                <!-- TEAM PHOTO 03 -->
-
-                <div class="slide">
-
-                    <img
-                        src="images/Team Photo 03.jpeg"
-                        alt="Vistaara Infra Consultants team"
-                    >
-
-                </div>
-
-
-                <!-- TEAM PHOTO 04 -->
-
-                <div class="slide">
-
-                    <img
-                        src="images/Team Photo 04.jpeg"
-                        alt="Vistaara Infra Consultants team"
-                    >
-
-                </div>
-
-
-                <!-- TEAM PHOTO 05 -->
-
-                <div class="slide">
-
-                    <img
-                        src="images/Team Photo 05.jpeg"
-                        alt="Vistaara Infra Consultants team"
-                    >
-
-                </div>
-
-
-                <!-- TEAM PHOTO 06 -->
-
-                <div class="slide">
-
-                    <img
-                        src="images/Team Photo 06.jpeg"
-                        alt="Vistaara Infra Consultants team"
-                    >
-
-                </div>
-
-
-                <!-- TEAM PHOTO 07 -->
-
-                <div class="slide">
-
-                    <img
-                        src="images/Team Photo 07.jpeg"
-                        alt="Vistaara Infra Consultants team"
-                    >
-
-                </div>
-
-
-                <!-- PREVIOUS BUTTON -->
-
-                <button
-                    class="slide-prev"
-                    type="button"
-                    aria-label="Previous image"
-                >
-                    ‹
-                </button>
-
-
-                <!-- NEXT BUTTON -->
-
-                <button
-                    class="slide-next"
-                    type="button"
-                    aria-label="Next image"
-                >
-                    ›
-                </button>
-
-
-
-                <!-- DOTS -->
-
-                <div class="slide-dots">
-
-                    <button
-                        type="button"
-                        class="active"
-                        aria-label="Show image 1"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 2"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 3"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 4"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 5"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 6"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 7"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 8"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 9"
-                    ></button>
-
-                    <button
-                        type="button"
-                        aria-label="Show image 10"
-                    ></button>
-
-                </div>
-
             </div>
 
         </div>
@@ -1241,6 +1007,30 @@
 
         </div>
 
+        <!-- ADDITIONAL PROJECT NAMES -->
+        <div class="more-projects">
+            <div class="more-projects-heading">
+                <div>
+                    <p class="eyebrow">More Portfolio</p>
+                    <h3>Additional Projects</h3>
+                    <p>
+                        Keep the five featured projects above, and list additional completed assignments here without making the main project cards crowded.
+                    </p>
+                </div>
+                <button class="more-projects-toggle" type="button" aria-expanded="false">
+                    <span>View More Projects</span>
+                    <span class="more-projects-arrow">+</span>
+                </button>
+            </div>
+
+            <div class="more-projects-list" id="more-projects-list" hidden>
+                <!--
+                    Add more project names in script.js inside additionalProjects.
+                    This keeps the HTML clean and makes the portfolio easy to update.
+                -->
+            </div>
+        </div>
+
     </div>
 
 </section>
@@ -1280,7 +1070,7 @@
                 <div class="person-image">
 
                     <img
-                        src="images/Deepak_Team.jpeg"
+                        src="images/Deepak_Team.PNG"
                         alt="Mr. Deepak S M"
                     >
 
@@ -1372,6 +1162,30 @@
             </article>
 
 
+        </div>
+
+        <!-- EMPLOYEE CAROUSEL -->
+        <div class="employee-section">
+            <div class="section-heading employee-heading">
+                <p class="eyebrow">Our Team</p>
+                <h3>Meet Our Engineering Team</h3>
+                <p>
+                    Additional team members are loaded automatically from image filenames using the Employee naming format.
+                </p>
+            </div>
+
+            <div class="employee-carousel-wrap">
+                <div class="employee-carousel" id="employee-carousel">
+                    <div class="employee-empty" id="employee-empty">
+                        <p>No employee photos found.</p>
+                    </div>
+                </div>
+
+                <div class="employee-navigation">
+                    <button class="employee-prev" type="button" aria-label="Previous employees">‹</button>
+                    <button class="employee-next" type="button" aria-label="Next employees">›</button>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -1497,9 +1311,9 @@
 
 
             <p>
-                We are expanding our Roads, Highways &amp; Structural
+                We are expanding our Roads &amp; Highways
                 Consultancy Team and are looking for motivated
-                Civil Engineers and Diploma holders to join us in Bengaluru.
+                Civil Engineers to join us in Bengaluru.
             </p>
 
         </div>
@@ -1521,7 +1335,7 @@
                     </span>
 
                     <h3>
-                        Draftsman - Graduate / Trainee (Highway/Structural Engineering)
+                        Graduate / Trainee Highway Engineer
                     </h3>
 
                     <p class="job-count">

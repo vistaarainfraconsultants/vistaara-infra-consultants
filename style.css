@@ -2867,3 +2867,349 @@ button {
     }
 
 }
+/* =========================================================
+   ABOUT MEDIA STACK
+========================================================= */
+
+.about-media-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.about-image {
+    position: relative;
+}
+
+.about-media-empty,
+.about-video-empty,
+.employee-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 25px;
+    text-align: center;
+    color: #cfcfcf;
+    background: var(--dark-grey);
+    z-index: 2;
+}
+
+.about-media-empty p,
+.about-video-empty p,
+.employee-empty p {
+    color: inherit;
+    margin: 0;
+}
+
+.about-media-empty.hidden,
+.about-video-empty.hidden,
+.employee-empty.hidden {
+    display: none;
+}
+
+.about-video-section {
+    width: 100%;
+}
+
+.about-video-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.about-video-heading h3 {
+    font-size: 28px;
+    line-height: 1.2;
+}
+
+.about-video-slider {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+    overflow: hidden;
+    border-radius: 14px;
+    background: var(--dark-grey);
+}
+
+#about-video-player {
+    display: none;
+    width: 100%;
+    height: 430px;
+    object-fit: cover;
+    background: #000;
+}
+
+#about-video-player.video-ready {
+    display: block;
+}
+
+.video-prev,
+.video-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.58);
+    color: var(--white);
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.video-prev { left: 15px; }
+.video-next { right: 15px; }
+
+.video-prev:hover,
+.video-next:hover {
+    background: var(--orange);
+}
+
+.video-caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 60px;
+    color: var(--white);
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    font-size: 14px;
+    font-weight: 700;
+    z-index: 4;
+}
+
+/* =========================================================
+   MORE PROJECTS
+========================================================= */
+
+.more-projects {
+    margin-top: 55px;
+    padding: 28px;
+    border: 1px solid var(--line);
+    background: var(--light-grey);
+}
+
+.more-projects-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+}
+
+.more-projects-heading h3 {
+    font-size: 28px;
+    margin-bottom: 7px;
+}
+
+.more-projects-heading p:not(.eyebrow) {
+    max-width: 720px;
+    font-size: 14px;
+}
+
+.more-projects-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border: 1px solid var(--orange);
+    border-radius: 5px;
+    background: var(--orange);
+    color: var(--white);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.more-projects-toggle:hover {
+    background: var(--orange-dark);
+}
+
+.more-projects-arrow {
+    font-size: 20px;
+    line-height: 1;
+    transition: transform 0.25s ease;
+}
+
+.more-projects-toggle[aria-expanded="true"] .more-projects-arrow {
+    transform: rotate(45deg);
+}
+
+.more-projects-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.more-project-item {
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    background: var(--white);
+}
+
+.more-project-item span {
+    display: block;
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.more-project-item h4 {
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+/* =========================================================
+   EMPLOYEE CAROUSEL
+========================================================= */
+
+.employee-section {
+    margin-top: 80px;
+    padding-top: 70px;
+    border-top: 1px solid var(--line);
+}
+
+.employee-heading {
+    margin-bottom: 30px;
+}
+
+.employee-heading h3 {
+    font-size: 34px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+}
+
+.employee-carousel-wrap {
+    position: relative;
+}
+
+.employee-carousel {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.employee-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--white);
+}
+
+.employee-photo {
+    width: 100%;
+    aspect-ratio: 4 / 4.5;
+    overflow: hidden;
+    background: var(--dark-grey);
+}
+
+.employee-photo img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.employee-info {
+    padding: 17px;
+}
+
+.employee-number {
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.employee-info h4 {
+    margin: 5px 0 5px;
+    font-size: 18px;
+    line-height: 1.3;
+}
+
+.employee-info p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.employee-navigation {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.employee-prev,
+.employee-next {
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    background: #333;
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.employee-prev:hover,
+.employee-next:hover {
+    background: var(--orange);
+    transform: scale(1.08);
+}
+
+@media (max-width: 950px) {
+    .employee-carousel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .more-projects-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .more-projects {
+        padding: 20px;
+    }
+
+    .more-projects-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .more-projects-toggle {
+        justify-content: center;
+    }
+
+    .employee-carousel {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-section {
+        margin-top: 55px;
+        padding-top: 50px;
+    }
+
+    #about-video-player {
+        height: 250px;
+    }
+
+    .video-caption {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
