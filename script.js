@@ -34,75 +34,75 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
 
-/* =====================================================
-   MOBILE MENU
-===================================================== */
+    /* =====================================================
+    MOBILE MENU
+    ===================================================== */
 
-const menuToggle =
-    document.querySelector(".menu-toggle");
+    const menuToggle =
+        document.querySelector(".menu-toggle");
 
-const navMenu =
-    document.querySelector(".nav");
+    const navMenu =
+        document.querySelector(".nav");
 
-if (menuToggle && navMenu) {
+    if (menuToggle && navMenu) {
 
-    menuToggle.setAttribute(
-        "aria-expanded",
-        "false"
-    );
+        menuToggle.setAttribute(
+            "aria-expanded",
+            "false"
+        );
 
-    menuToggle.addEventListener(
-        "click",
-        () => {
+        menuToggle.addEventListener(
+            "click",
+            () => {
 
-            const isOpen =
-                navMenu.classList.toggle(
-                    "active"
+                const isOpen =
+                    navMenu.classList.toggle(
+                        "active"
+                    );
+
+                menuToggle.classList.toggle(
+                    "active",
+                    isOpen
                 );
 
-            menuToggle.classList.toggle(
-                "active",
-                isOpen
-            );
+                menuToggle.setAttribute(
+                    "aria-expanded",
+                    String(isOpen)
+                );
 
-            menuToggle.setAttribute(
-                "aria-expanded",
-                String(isOpen)
-            );
-
-        }
-    );
+            }
+        );
 
 
-    /* Close menu when a navigation link is clicked */
+        /* Close menu when a navigation link is clicked */
 
-    navMenu
-        .querySelectorAll("a")
-        .forEach(link => {
+        navMenu
+            .querySelectorAll("a")
+            .forEach(link => {
 
-            link.addEventListener(
-                "click",
-                () => {
+                link.addEventListener(
+                    "click",
+                    () => {
 
-                    navMenu.classList.remove(
-                        "active"
-                    );
+                        navMenu.classList.remove(
+                            "active"
+                        );
 
-                    menuToggle.classList.remove(
-                        "active"
-                    );
+                        menuToggle.classList.remove(
+                            "active"
+                        );
 
-                    menuToggle.setAttribute(
-                        "aria-expanded",
-                        "false"
-                    );
+                        menuToggle.setAttribute(
+                            "aria-expanded",
+                            "false"
+                        );
 
-                }
-            );
+                    }
+                );
 
-        });
+            });
 
-}
+    }
 
 
 
