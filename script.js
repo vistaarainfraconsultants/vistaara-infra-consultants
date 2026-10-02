@@ -34,40 +34,77 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
 
-    /* =====================================================
-       MOBILE MENU
-    ===================================================== */
+/* =====================================================
+   MOBILE MENU
+===================================================== */
 
-    const menuToggle =
-        document.querySelector(".menu-toggle");
+const menuToggle =
+    document.querySelector(".menu-toggle");
 
-    const navMenu =
-        document.querySelector(".nav-menu");
+const navMenu =
+    document.querySelector(".nav");
 
-    if (menuToggle && navMenu) {
+if (menuToggle && navMenu) {
 
-        menuToggle.addEventListener("click", () => {
+    menuToggle.setAttribute(
+        "aria-expanded",
+        "false"
+    );
 
-            navMenu.classList.toggle("active");
+    menuToggle.addEventListener(
+        "click",
+        () => {
 
-            menuToggle.classList.toggle("active");
+            const isOpen =
+                navMenu.classList.toggle(
+                    "active"
+                );
+
+            menuToggle.classList.toggle(
+                "active",
+                isOpen
+            );
+
+            menuToggle.setAttribute(
+                "aria-expanded",
+                String(isOpen)
+            );
+
+        }
+    );
+
+
+    /* Close menu when a navigation link is clicked */
+
+    navMenu
+        .querySelectorAll("a")
+        .forEach(link => {
+
+            link.addEventListener(
+                "click",
+                () => {
+
+                    navMenu.classList.remove(
+                        "active"
+                    );
+
+                    menuToggle.classList.remove(
+                        "active"
+                    );
+
+                    menuToggle.setAttribute(
+                        "aria-expanded",
+                        "false"
+                    );
+
+                }
+            );
 
         });
 
+}
 
-        navMenu.querySelectorAll("a").forEach(link => {
 
-            link.addEventListener("click", () => {
-
-                navMenu.classList.remove("active");
-
-                menuToggle.classList.remove("active");
-
-            });
-
-        });
-
-    }
 
 
     /* =====================================================
