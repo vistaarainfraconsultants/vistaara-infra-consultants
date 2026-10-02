@@ -38,24 +38,35 @@ document.addEventListener("DOMContentLoaded", () => {
        MOBILE MENU
     ===================================================== */
 
-    const menuToggle = document.querySelector(".menu-toggle");
-    const navMenu = document.querySelector(".nav-menu");
+    const menuToggle =
+        document.querySelector(".menu-toggle");
+
+    const navMenu =
+        document.querySelector(".nav-menu");
 
     if (menuToggle && navMenu) {
 
         menuToggle.addEventListener("click", () => {
+
             navMenu.classList.toggle("active");
+
             menuToggle.classList.toggle("active");
+
         });
+
 
         navMenu.querySelectorAll("a").forEach(link => {
 
             link.addEventListener("click", () => {
+
                 navMenu.classList.remove("active");
+
                 menuToggle.classList.remove("active");
+
             });
 
         });
+
     }
 
 
@@ -63,18 +74,19 @@ document.addEventListener("DOMContentLoaded", () => {
        FOOTER YEAR
     ===================================================== */
 
-    const yearElement = document.getElementById("current-year");
+    const yearElement =
+        document.getElementById("current-year");
 
     if (yearElement) {
-        yearElement.textContent = new Date().getFullYear();
+
+        yearElement.textContent =
+            new Date().getFullYear();
+
     }
 
 
     /* =====================================================
        GET ALL MEDIA FROM GITHUB
-       
-       This allows the website to automatically detect
-       newly uploaded images/videos inside /images/
     ===================================================== */
 
     async function getRepositoryMedia() {
@@ -88,29 +100,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
 
-            const response = await fetch(apiURL, {
-                headers: {
-                    "Accept": "application/vnd.github+json"
-                }
-            });
+            const response =
+                await fetch(apiURL, {
+                    headers: {
+                        "Accept":
+                            "application/vnd.github+json"
+                    }
+                });
+
 
             if (!response.ok) {
+
                 throw new Error(
                     `GitHub API error: ${response.status}`
                 );
+
             }
 
-            const files = await response.json();
+
+            const files =
+                await response.json();
+
 
             if (!Array.isArray(files)) {
+
                 return [];
+
             }
+
 
             return files.filter(file =>
                 file &&
                 file.type === "file" &&
                 file.name
             );
+
 
         } catch (error) {
 
@@ -120,7 +144,9 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             return [];
+
         }
+
     }
 
 
@@ -130,15 +156,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getFileExtension(filename) {
 
-        const parts = filename.split(".");
+        const parts =
+            filename.split(".");
 
         if (parts.length < 2) {
+
             return "";
+
         }
 
         return parts
             .pop()
             .toLowerCase();
+
     }
 
 
@@ -147,6 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return IMAGE_EXTENSIONS.includes(
             getFileExtension(filename)
         );
+
     }
 
 
@@ -155,6 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return VIDEO_EXTENSIONS.includes(
             getFileExtension(filename)
         );
+
     }
 
 
@@ -164,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
             /\.[^/.]+$/,
             ""
         );
+
     }
 
 
@@ -174,22 +207,17 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/[_-]+/g, " ")
             .replace(/\s+/g, " ")
             .trim();
+
     }
 
 
     /* =====================================================
        ABOUT US
        DYNAMIC PHOTO SLIDESHOW
-       
+
        Automatically detects:
        - Project Discussion
        - Team Photo
-       
-       Examples:
-       Project Discussion.jpg
-       Project Discussion 01.png
-       Team Photo.jpg
-       Team Photo 02.webp
     ===================================================== */
 
     async function initialiseAboutPhotos(files) {
@@ -199,155 +227,251 @@ document.addEventListener("DOMContentLoaded", () => {
                 "about-photo-slideshow"
             );
 
+
         const emptyMessage =
             document.getElementById(
                 "about-photo-empty"
             );
+
 
         const dotsContainer =
             document.getElementById(
                 "about-photo-dots"
             );
 
+
         if (!slideshow) {
+
             return;
+
         }
 
-        const aboutPhotos = files
-            .filter(file => {
 
-                if (!isImage(file.name)) {
-                    return false;
-                }
+        const aboutPhotos =
+            files
+                .filter(file => {
 
-                const name =
-                    normaliseText(file.name);
+                    if (!isImage(file.name)) {
 
-                return (
-                    name.includes("project discussion") ||
-                    name.includes("team photo")
-                );
+                        return false;
 
-            })
-            .sort((a, b) =>
-                a.name.localeCompare(
-                    b.name,
-                    undefined,
-                    {
-                        numeric: true,
-                        sensitivity: "base"
                     }
-                )
-            );
+
+
+                    const name =
+                        normaliseText(file.name);
+
+
+                    return (
+                        name.includes(
+                            "project discussion"
+                        ) ||
+                        name.includes(
+                            "team photo"
+                        )
+                    );
+
+                })
+                .sort((a, b) =>
+                    a.name.localeCompare(
+                        b.name,
+                        undefined,
+                        {
+                            numeric: true,
+                            sensitivity: "base"
+                        }
+                    )
+                );
 
 
         slideshow
-            .querySelectorAll(".slide.dynamic-slide")
-            .forEach(slide => slide.remove());
+            .querySelectorAll(
+                ".slide.dynamic-slide"
+            )
+            .forEach(slide =>
+                slide.remove()
+            );
+
 
         if (dotsContainer) {
+
             dotsContainer.innerHTML = "";
+
         }
 
 
         if (aboutPhotos.length === 0) {
 
             if (emptyMessage) {
-                emptyMessage.style.display = "block";
+
+                emptyMessage.style.display =
+                    "block";
+
             }
 
             return;
+
         }
 
 
         if (emptyMessage) {
-            emptyMessage.style.display = "none";
+
+            emptyMessage.style.display =
+                "none";
+
         }
 
 
         const previousButton =
-            slideshow.querySelector(".slide-prev");
+            slideshow.querySelector(
+                ".slide-prev"
+            );
+
 
         const nextButton =
-            slideshow.querySelector(".slide-next");
+            slideshow.querySelector(
+                ".slide-next"
+            );
 
 
-        aboutPhotos.forEach((file, index) => {
+        aboutPhotos.forEach(
+            (file, index) => {
 
-            const slide =
-                document.createElement("div");
-
-            slide.className =
-                "slide dynamic-slide";
-
-            if (index === 0) {
-                slide.classList.add("active");
-            }
+                const slide =
+                    document.createElement(
+                        "div"
+                    );
 
 
-            const image =
-                document.createElement("img");
+                slide.className =
+                    "slide dynamic-slide";
 
-            image.src = file.download_url;
-            image.alt =
-                getFileNameWithoutExtension(
-                    file.name
-                );
-
-            image.loading =
-                index === 0
-                    ? "eager"
-                    : "lazy";
-
-
-            slide.appendChild(image);
-
-
-            if (nextButton) {
-                slideshow.insertBefore(
-                    slide,
-                    nextButton
-                );
-            } else {
-                slideshow.appendChild(slide);
-            }
-
-
-            if (dotsContainer) {
-
-                const dot =
-                    document.createElement("button");
-
-                dot.type = "button";
-
-                dot.className =
-                    "about-dot";
 
                 if (index === 0) {
-                    dot.classList.add("active");
+
+                    slide.classList.add(
+                        "active"
+                    );
+
                 }
 
-                dot.setAttribute(
-                    "aria-label",
-                    `Show About photo ${index + 1}`
-                );
 
-                dot.addEventListener(
-                    "click",
-                    () => {
-                        showAboutPhoto(index);
+                const image =
+                    document.createElement(
+                        "img"
+                    );
+
+
+                image.src =
+                    file.download_url;
+
+
+                image.alt =
+                    getFileNameWithoutExtension(
+                        file.name
+                    );
+
+
+                image.loading =
+                    index === 0
+                        ? "eager"
+                        : "lazy";
+
+
+                slide.appendChild(image);
+
+
+                if (nextButton) {
+
+                    slideshow.insertBefore(
+                        slide,
+                        nextButton
+                    );
+
+                } else {
+
+                    slideshow.appendChild(
+                        slide
+                    );
+
+                }
+
+
+                if (dotsContainer) {
+
+                    const dot =
+                        document.createElement(
+                            "button"
+                        );
+
+
+                    dot.type = "button";
+
+
+                    dot.className =
+                        "about-dot";
+
+
+                    if (index === 0) {
+
+                        dot.classList.add(
+                            "active"
+                        );
+
                     }
-                );
 
-                dotsContainer.appendChild(dot);
+
+                    dot.setAttribute(
+                        "aria-label",
+                        `Show About photo ${index + 1}`
+                    );
+
+
+                    dot.addEventListener(
+                        "click",
+                        () => {
+
+                            showAboutPhoto(
+                                index
+                            );
+
+                            /*
+                             * If the section is currently
+                             * visible, restart its timer.
+                             */
+
+                            if (
+                                aboutPhotosVisible
+                            ) {
+
+                                restartAboutTimer();
+
+                            }
+
+                        }
+                    );
+
+
+                    dotsContainer.appendChild(
+                        dot
+                    );
+
+                }
+
             }
-
-        });
+        );
 
 
         let currentIndex = 0;
+
         let autoTimer = null;
 
+        let aboutPhotosVisible = false;
+
+
+        /* =================================================
+           GET SLIDES
+        ================================================= */
 
         function getSlides() {
 
@@ -356,38 +480,63 @@ document.addEventListener("DOMContentLoaded", () => {
                     ".dynamic-slide"
                 )
             );
+
         }
 
+
+        /* =================================================
+           UPDATE DOTS
+        ================================================= */
 
         function updateDots(index) {
 
             if (!dotsContainer) {
+
                 return;
+
             }
 
+
             dotsContainer
-                .querySelectorAll(".about-dot")
-                .forEach((dot, dotIndex) => {
+                .querySelectorAll(
+                    ".about-dot"
+                )
+                .forEach(
+                    (dot, dotIndex) => {
 
-                    dot.classList.toggle(
-                        "active",
-                        dotIndex === index
-                    );
+                        dot.classList.toggle(
+                            "active",
+                            dotIndex === index
+                        );
 
-                });
+                    }
+                );
+
         }
 
 
+        /* =================================================
+           SHOW PHOTO
+        ================================================= */
+
         function showAboutPhoto(index) {
 
-            const slides = getSlides();
+            const slides =
+                getSlides();
+
 
             if (!slides.length) {
+
                 return;
+
             }
 
+
             currentIndex =
-                (index + slides.length) %
+                (
+                    index +
+                    slides.length
+                ) %
                 slides.length;
 
 
@@ -396,16 +545,98 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     slide.classList.toggle(
                         "active",
-                        slideIndex === currentIndex
+                        slideIndex ===
+                            currentIndex
                     );
 
                 }
             );
 
 
-            updateDots(currentIndex);
+            updateDots(
+                currentIndex
+            );
+
         }
 
+
+        /* =================================================
+           PHOTO TIMER
+           
+           Timer ONLY runs while the section
+           is visible on screen.
+        ================================================= */
+
+        function startAboutTimer() {
+
+            if (
+                aboutPhotos.length <= 1
+            ) {
+
+                return;
+
+            }
+
+
+            if (!aboutPhotosVisible) {
+
+                return;
+
+            }
+
+
+            clearInterval(
+                autoTimer
+            );
+
+
+            autoTimer =
+                setInterval(
+                    () => {
+
+                        if (
+                            !aboutPhotosVisible
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        showAboutPhoto(
+                            currentIndex + 1
+                        );
+
+                    },
+                    4000
+                );
+
+        }
+
+
+        function stopAboutTimer() {
+
+            clearInterval(
+                autoTimer
+            );
+
+            autoTimer = null;
+
+        }
+
+
+        function restartAboutTimer() {
+
+            stopAboutTimer();
+
+            startAboutTimer();
+
+        }
+
+
+        /* =================================================
+           PREVIOUS BUTTON
+        ================================================= */
 
         if (previousButton) {
 
@@ -417,11 +648,24 @@ document.addEventListener("DOMContentLoaded", () => {
                         currentIndex - 1
                     );
 
-                    restartAboutTimer();
+
+                    if (
+                        aboutPhotosVisible
+                    ) {
+
+                        restartAboutTimer();
+
+                    }
+
                 }
             );
+
         }
 
+
+        /* =================================================
+           NEXT BUTTON
+        ================================================= */
 
         if (nextButton) {
 
@@ -433,56 +677,77 @@ document.addEventListener("DOMContentLoaded", () => {
                         currentIndex + 1
                     );
 
-                    restartAboutTimer();
+
+                    if (
+                        aboutPhotosVisible
+                    ) {
+
+                        restartAboutTimer();
+
+                    }
+
                 }
             );
+
         }
 
 
-        function startAboutTimer() {
+        /* =================================================
+           INTERSECTION OBSERVER
 
-            if (aboutPhotos.length <= 1) {
-                return;
-            }
+           Photo slideshow starts only when
+           viewer reaches this section.
+        ================================================= */
 
-            clearInterval(autoTimer);
+        const photoObserver =
+            new IntersectionObserver(
+                entries => {
 
-            autoTimer = setInterval(
-                () => {
+                    entries.forEach(entry => {
 
-                    showAboutPhoto(
-                        currentIndex + 1
-                    );
+                        if (
+                            entry.isIntersecting
+                        ) {
+
+                            aboutPhotosVisible =
+                                true;
+
+
+                            startAboutTimer();
+
+
+                        } else {
+
+                            aboutPhotosVisible =
+                                false;
+
+
+                            stopAboutTimer();
+
+                        }
+
+                    });
 
                 },
-                4000
+                {
+                    threshold: 0.25
+                }
             );
-        }
 
 
-        function restartAboutTimer() {
+        photoObserver.observe(
+            slideshow
+        );
 
-            clearInterval(autoTimer);
-
-            startAboutTimer();
-        }
-
-
-        startAboutTimer();
     }
 
 
     /* =====================================================
        ABOUT US
        DYNAMIC VIDEO SLIDER
-       
+
        Automatically detects filenames containing:
        "Video"
-       
-       Examples:
-       Mysuru Video.mp4
-       Team Video 01.mp4
-       Project Video.webm
     ===================================================== */
 
     async function initialiseAboutVideos(files) {
@@ -492,25 +757,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 "about-video-slider"
             );
 
+
         const videoPlayer =
             document.getElementById(
                 "about-video-player"
             );
+
 
         const emptyMessage =
             document.getElementById(
                 "about-video-empty"
             );
 
+
         const previousButton =
             document.querySelector(
                 ".video-prev"
             );
 
+
         const nextButton =
             document.querySelector(
                 ".video-next"
             );
+
 
         const caption =
             document.getElementById(
@@ -518,53 +788,72 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-        if (!videoSlider || !videoPlayer) {
+        if (
+            !videoSlider ||
+            !videoPlayer
+        ) {
+
             return;
+
         }
 
 
-        const videos = files
-            .filter(file => {
+        const videos =
+            files
+                .filter(file => {
 
-                if (!isVideo(file.name)) {
-                    return false;
-                }
+                    if (!isVideo(file.name)) {
 
-                return normaliseText(
-                    file.name
-                ).includes("video");
+                        return false;
 
-            })
-            .sort((a, b) =>
-                a.name.localeCompare(
-                    b.name,
-                    undefined,
-                    {
-                        numeric: true,
-                        sensitivity: "base"
                     }
-                )
-            );
+
+
+                    return normaliseText(
+                        file.name
+                    ).includes(
+                        "video"
+                    );
+
+                })
+                .sort((a, b) =>
+                    a.name.localeCompare(
+                        b.name,
+                        undefined,
+                        {
+                            numeric: true,
+                            sensitivity: "base"
+                        }
+                    )
+                );
 
 
         if (videos.length === 0) {
 
             if (emptyMessage) {
+
                 emptyMessage.style.display =
                     "block";
+
             }
+
 
             videoSlider.style.display =
                 "none";
 
+
             return;
+
         }
 
 
         if (emptyMessage) {
+
             emptyMessage.style.display =
                 "none";
+
         }
+
 
         videoSlider.style.display =
             "block";
@@ -572,11 +861,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let currentIndex = 0;
 
+        let videoTimer = null;
 
-        function showVideo(index) {
+        let videoSectionVisible = false;
+
+
+        /* =================================================
+           VIDEO SLIDE TIME
+
+           Change this value if required.
+
+           8000 = 8 seconds
+        ================================================= */
+
+        const VIDEO_SLIDE_INTERVAL =
+            8000;
+
+
+        /* =================================================
+           SHOW VIDEO
+        ================================================= */
+
+        function showVideo(
+            index,
+            shouldPlay = false
+        ) {
 
             currentIndex =
-                (index + videos.length) %
+                (
+                    index +
+                    videos.length
+                ) %
                 videos.length;
 
 
@@ -587,8 +902,14 @@ document.addEventListener("DOMContentLoaded", () => {
             videoPlayer.pause();
 
 
+            videoPlayer.removeAttribute(
+                "src"
+            );
+
+
             videoPlayer.src =
                 video.download_url;
+
 
             videoPlayer.load();
 
@@ -604,17 +925,133 @@ document.addEventListener("DOMContentLoaded", () => {
                     getFileNameWithoutExtension(
                         video.name
                     );
+
             }
 
 
             /*
-             * Try autoplay after changing video.
-             * Browsers may block autoplay if sound
-             * is enabled.
+             * Play ONLY when the video section
+             * is actually visible.
+             */
+
+            if (
+                shouldPlay &&
+                videoSectionVisible
+            ) {
+
+                const playPromise =
+                    videoPlayer.play();
+
+
+                if (
+                    playPromise &&
+                    typeof playPromise.catch ===
+                        "function"
+                ) {
+
+                    playPromise.catch(() => {
+
+                        /*
+                         * Browser may block
+                         * autoplay when sound
+                         * is enabled.
+                         */
+
+                    });
+
+                }
+
+            }
+
+        }
+
+
+        /* =================================================
+           START VIDEO SLIDING
+        ================================================= */
+
+        function startVideoSlider() {
+
+            if (
+                videos.length <= 1
+            ) {
+
+                /*
+                 * Still play the video if
+                 * the section is visible.
+                 */
+
+                if (
+                    videoSectionVisible
+                ) {
+
+                    const playPromise =
+                        videoPlayer.play();
+
+
+                    if (
+                        playPromise &&
+                        typeof playPromise.catch ===
+                            "function"
+                    ) {
+
+                        playPromise.catch(
+                            () => {}
+                        );
+
+                    }
+
+                }
+
+                return;
+
+            }
+
+
+            if (
+                !videoSectionVisible
+            ) {
+
+                return;
+
+            }
+
+
+            clearInterval(
+                videoTimer
+            );
+
+
+            videoTimer =
+                setInterval(
+                    () => {
+
+                        if (
+                            !videoSectionVisible
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        showVideo(
+                            currentIndex + 1,
+                            true
+                        );
+
+                    },
+                    VIDEO_SLIDE_INTERVAL
+                );
+
+
+            /*
+             * Start playing current video.
              */
 
             const playPromise =
                 videoPlayer.play();
+
 
             if (
                 playPromise &&
@@ -622,12 +1059,41 @@ document.addEventListener("DOMContentLoaded", () => {
                     "function"
             ) {
 
-                playPromise.catch(() => {
-                    // Autoplay blocked by browser.
-                });
+                playPromise.catch(
+                    () => {}
+                );
+
             }
+
         }
 
+
+        /* =================================================
+           STOP VIDEO SLIDING
+        ================================================= */
+
+        function stopVideoSlider() {
+
+            clearInterval(
+                videoTimer
+            );
+
+            videoTimer = null;
+
+
+            /*
+             * Pause video when section
+             * is no longer visible.
+             */
+
+            videoPlayer.pause();
+
+        }
+
+
+        /* =================================================
+           PREVIOUS BUTTON
+        ================================================= */
 
         if (previousButton) {
 
@@ -636,13 +1102,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 () => {
 
                     showVideo(
-                        currentIndex - 1
+                        currentIndex - 1,
+                        videoSectionVisible
                     );
+
+
+                    if (
+                        videoSectionVisible
+                    ) {
+
+                        startVideoSlider();
+
+                    }
 
                 }
             );
+
         }
 
+
+        /* =================================================
+           NEXT BUTTON
+        ================================================= */
 
         if (nextButton) {
 
@@ -651,24 +1132,118 @@ document.addEventListener("DOMContentLoaded", () => {
                 () => {
 
                     showVideo(
-                        currentIndex + 1
+                        currentIndex + 1,
+                        videoSectionVisible
                     );
+
+
+                    if (
+                        videoSectionVisible
+                    ) {
+
+                        startVideoSlider();
+
+                    }
 
                 }
             );
+
         }
 
 
-        showVideo(0);
+        /* =================================================
+           WHEN VIDEO FINISHES
+
+           Immediately move to the next video
+           if the viewer is still looking at
+           the video section.
+        ================================================= */
+
+        videoPlayer.addEventListener(
+            "ended",
+            () => {
+
+                if (
+                    videoSectionVisible &&
+                    videos.length > 1
+                ) {
+
+                    showVideo(
+                        currentIndex + 1,
+                        true
+                    );
+
+                }
+
+            }
+        );
+
+
+        /* =================================================
+           INTERSECTION OBSERVER
+
+           Video starts only when the viewer
+           reaches the video section.
+        ================================================= */
+
+        const videoObserver =
+            new IntersectionObserver(
+                entries => {
+
+                    entries.forEach(entry => {
+
+                        if (
+                            entry.isIntersecting
+                        ) {
+
+                            videoSectionVisible =
+                                true;
+
+
+                            startVideoSlider();
+
+
+                        } else {
+
+                            videoSectionVisible =
+                                false;
+
+
+                            stopVideoSlider();
+
+                        }
+
+                    });
+
+                },
+                {
+                    threshold: 0.25
+                }
+            );
+
+
+        videoObserver.observe(
+            videoSlider
+        );
+
+
+        /* =================================================
+           INITIAL VIDEO
+
+           Load video but DO NOT autoplay yet.
+           It will start when visible.
+        ================================================= */
+
+        showVideo(
+            0,
+            false
+        );
+
     }
 
 
     /* =====================================================
        ADDITIONAL PROJECTS
-       
-       Existing 5 project cards remain.
-       Additional projects are displayed in an
-       expandable section.
     ===================================================== */
 
     const additionalProjects = [
@@ -713,10 +1288,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 "more-projects-list"
             );
 
+
         const toggle =
             document.querySelector(
                 ".more-projects-toggle"
             );
+
 
         const arrow =
             document.querySelector(
@@ -725,7 +1302,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (!list || !toggle) {
+
             return;
+
         }
 
 
@@ -736,33 +1315,45 @@ document.addEventListener("DOMContentLoaded", () => {
             project => {
 
                 const item =
-                    document.createElement("div");
+                    document.createElement(
+                        "div"
+                    );
+
 
                 item.className =
                     "more-project-item";
 
 
                 const code =
-                    document.createElement("span");
+                    document.createElement(
+                        "span"
+                    );
+
 
                 code.className =
                     "more-project-code";
+
 
                 code.textContent =
                     project.code;
 
 
                 const name =
-                    document.createElement("span");
+                    document.createElement(
+                        "span"
+                    );
+
 
                 name.className =
                     "more-project-name";
+
 
                 name.textContent =
                     project.name;
 
 
                 item.appendChild(code);
+
                 item.appendChild(name);
 
                 list.appendChild(item);
@@ -793,25 +1384,17 @@ document.addEventListener("DOMContentLoaded", () => {
                         "active",
                         isOpen
                     );
+
                 }
 
             }
         );
+
     }
 
 
     /* =====================================================
        EMPLOYEE CAROUSEL
-       
-       Filename format:
-
-       Employee_01_Mr Vijay Kumar_Senior Structural Engineer
-
-       Employee_02_Name_Designation
-
-       Employee_03_Name_Designation
-
-       etc.
     ===================================================== */
 
     function parseEmployeeFile(file) {
@@ -829,7 +1412,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (!match) {
+
             return null;
+
         }
 
 
@@ -841,8 +1426,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         const remainder =
-            match[2]
-                .trim();
+            match[2].trim();
 
 
         const parts =
@@ -853,7 +1437,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (!parts.length) {
+
             return null;
+
         }
 
 
@@ -872,6 +1458,7 @@ document.addEventListener("DOMContentLoaded", () => {
             designation,
             file
         };
+
     }
 
 
@@ -882,15 +1469,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 "employee-carousel"
             );
 
+
         const emptyMessage =
             document.getElementById(
                 "employee-empty"
             );
 
+
         const previousButton =
             document.querySelector(
                 ".employee-prev"
             );
+
 
         const nextButton =
             document.querySelector(
@@ -899,7 +1489,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (!carousel) {
+
             return;
+
         }
 
 
@@ -919,17 +1511,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!employees.length) {
 
             if (emptyMessage) {
+
                 emptyMessage.style.display =
                     "block";
+
             }
 
             return;
+
         }
 
 
         if (emptyMessage) {
+
             emptyMessage.style.display =
                 "none";
+
         }
 
 
@@ -943,14 +1540,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             if (width <= 600) {
+
                 return 1;
+
             }
+
 
             if (width <= 950) {
+
                 return 2;
+
             }
 
+
             return 4;
+
         }
 
 
@@ -974,33 +1578,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const employee =
                     employees[
-                        (currentStart + i) %
+                        (
+                            currentStart +
+                            i
+                        ) %
                         employees.length
                     ];
 
 
                 const card =
-                    document.createElement("article");
+                    document.createElement(
+                        "article"
+                    );
+
 
                 card.className =
                     "employee-card";
 
 
                 const imageWrapper =
-                    document.createElement("div");
+                    document.createElement(
+                        "div"
+                    );
+
 
                 imageWrapper.className =
                     "employee-photo";
 
 
                 const image =
-                    document.createElement("img");
+                    document.createElement(
+                        "img"
+                    );
+
 
                 image.src =
                     employee.file.download_url;
 
+
                 image.alt =
                     `${employee.name} - ${employee.designation}`;
+
 
                 image.loading =
                     "lazy";
@@ -1012,40 +1630,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                 const info =
-                    document.createElement("div");
+                    document.createElement(
+                        "div"
+                    );
+
 
                 info.className =
                     "employee-info";
 
 
                 const number =
-                    document.createElement("span");
+                    document.createElement(
+                        "span"
+                    );
+
 
                 number.className =
                     "employee-number";
 
+
                 number.textContent =
                     String(
                         employee.number
-                    ).padStart(2, "0");
+                    ).padStart(
+                        2,
+                        "0"
+                    );
 
 
                 const name =
-                    document.createElement("h4");
+                    document.createElement(
+                        "h4"
+                    );
+
 
                 name.textContent =
                     employee.name;
 
 
                 const designation =
-                    document.createElement("p");
+                    document.createElement(
+                        "p"
+                    );
+
 
                 designation.textContent =
                     employee.designation;
 
 
                 info.appendChild(number);
+
                 info.appendChild(name);
+
                 info.appendChild(
                     designation
                 );
@@ -1055,18 +1691,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     imageWrapper
                 );
 
+
                 card.appendChild(info);
 
 
                 carousel.appendChild(card);
+
             }
+
         }
 
 
         function moveEmployee(direction) {
 
-            if (employees.length <= 1) {
+            if (
+                employees.length <= 1
+            ) {
+
                 return;
+
             }
 
 
@@ -1080,6 +1723,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             renderEmployees();
+
         }
 
 
@@ -1093,6 +1737,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 }
             );
+
         }
 
 
@@ -1106,6 +1751,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 }
             );
+
         }
 
 
@@ -1116,12 +1762,17 @@ document.addEventListener("DOMContentLoaded", () => {
             "resize",
             () => {
 
-                clearTimeout(resizeTimer);
+                clearTimeout(
+                    resizeTimer
+                );
+
 
                 resizeTimer =
                     setTimeout(
                         () => {
+
                             renderEmployees();
+
                         },
                         150
                     );
@@ -1135,19 +1786,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         /*
          * Automatic circular movement.
-         *
-         * Example desktop:
-         *
-         * 01 02 03 04
-         * 02 03 04 05
-         * 03 04 05 06
-         * 04 05 06 07
-         * 05 06 07 01
-         *
-         * Then repeats.
          */
 
-        if (employees.length > 4) {
+        if (
+            employees.length > 4
+        ) {
 
             setInterval(
                 () => {
@@ -1157,7 +1800,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
                 5000
             );
+
         }
+
     }
 
 
@@ -1178,8 +1823,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             ".job-card"
                         );
 
+
                     if (!card) {
+
                         return;
+
                     }
 
 
@@ -1188,8 +1836,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             ".job-details"
                         );
 
+
                     if (!details) {
+
                         return;
+
                     }
 
 
@@ -1213,15 +1864,11 @@ document.addEventListener("DOMContentLoaded", () => {
     /* =====================================================
        GALLERY
        
-       Automatically detects image files beginning with:
-       
-       Gallery
-       
-       Examples:
+       Automatically detects:
        Gallery 01.jpg
        Gallery 02.png
        Gallery 03.webp
-       Gallery 10.jpeg
+       etc.
     ===================================================== */
 
     async function initialiseGallery(files) {
@@ -1237,6 +1884,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ".gallery-prev"
             );
 
+
         const nextButton =
             document.querySelector(
                 ".gallery-next"
@@ -1244,7 +1892,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (!galleryGrid) {
+
             return;
+
         }
 
 
@@ -1253,7 +1903,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 .filter(file => {
 
                     if (!isImage(file.name)) {
+
                         return false;
+
                     }
 
 
@@ -1279,9 +1931,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!galleryFiles.length) {
 
-            galleryGrid.innerHTML = "";
+            galleryGrid.innerHTML =
+                "";
 
             return;
+
         }
 
 
@@ -1292,7 +1946,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function renderGallery() {
 
-            galleryGrid.innerHTML = "";
+            galleryGrid.innerHTML =
+                "";
 
 
             const count =
@@ -1319,22 +1974,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                 const item =
-                    document.createElement("div");
+                    document.createElement(
+                        "div"
+                    );
+
 
                 item.className =
                     "gallery-item";
 
 
                 const image =
-                    document.createElement("img");
+                    document.createElement(
+                        "img"
+                    );
+
 
                 image.src =
                     file.download_url;
+
 
                 image.alt =
                     getFileNameWithoutExtension(
                         file.name
                     );
+
 
                 image.loading =
                     i < 2
@@ -1342,10 +2005,17 @@ document.addEventListener("DOMContentLoaded", () => {
                         : "lazy";
 
 
-                item.appendChild(image);
+                item.appendChild(
+                    image
+                );
 
-                galleryGrid.appendChild(item);
+
+                galleryGrid.appendChild(
+                    item
+                );
+
             }
+
         }
 
 
@@ -1355,7 +2025,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 galleryFiles.length <=
                 visibleCount
             ) {
+
                 return;
+
             }
 
 
@@ -1369,6 +2041,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             renderGallery();
+
         }
 
 
@@ -1382,6 +2055,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 }
             );
+
         }
 
 
@@ -1395,6 +2069,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 }
             );
+
         }
 
 
@@ -1414,7 +2089,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
                 4000
             );
+
         }
+
     }
 
 
@@ -1435,6 +2112,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             return;
+
         }
 
 
@@ -1456,6 +2134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await initialiseGallery(
             files
         );
+
     }
 
 
@@ -1474,7 +2153,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       PAUSE VIDEOS / SLIDESHOW WHEN TAB IS HIDDEN
+       PAGE VISIBILITY
+
+       If the browser tab itself is hidden,
+       stop video playback.
     ===================================================== */
 
     document.addEventListener(
@@ -1487,13 +2169,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            if (
-                document.hidden &&
-                video &&
-                !video.paused
-            ) {
+            if (!video) {
+
+                return;
+
+            }
+
+
+            if (document.hidden) {
 
                 video.pause();
+
             }
 
         }
