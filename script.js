@@ -1929,6 +1929,10 @@ document
                 "gallery-grid"
             );
 
+        const galleryEmpty = 
+            document.getElementById( 
+                "gallery-empty" 
+        );
 
         const previousButton =
             document.querySelector(
@@ -1980,14 +1984,43 @@ document
                 );
 
 
-        if (!galleryFiles.length) {
 
-            galleryGrid.innerHTML =
-                "";
+    /* =================================================
+       NO GALLERY IMAGES
+    ================================================= */
 
-            return;
+    if (!galleryFiles.length) {
+
+        galleryGrid.innerHTML =
+            "";
+
+
+        if (galleryEmpty) {
+
+            galleryEmpty.style.display =
+                "block";
 
         }
+
+
+        return;
+
+    }
+
+
+    /* =================================================
+       GALLERY IMAGES FOUND
+
+       Hide the "Gallery images will appear here"
+       message.
+    ================================================= */
+
+    if (galleryEmpty) {
+
+        galleryEmpty.style.display =
+            "none";
+
+    }
 
 
         let currentStart = 0;
