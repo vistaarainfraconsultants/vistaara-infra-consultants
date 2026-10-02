@@ -1806,59 +1806,110 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    /* =====================================================
-       CAREERS / JOB CARD TOGGLE
-    ===================================================== */
 
-    document
-        .querySelectorAll(".job-toggle")
-        .forEach(button => {
+/* =====================================================
+   CAREERS / JOB CARD TOGGLE
+===================================================== */
 
-            button.addEventListener(
-                "click",
-                () => {
+document
+    .querySelectorAll(".job-details-toggle")
+    .forEach(button => {
 
-                    const card =
-                        button.closest(
-                            ".job-card"
-                        );
+        button.addEventListener(
+            "click",
+            () => {
 
-
-                    if (!card) {
-
-                        return;
-
-                    }
-
-
-                    const details =
-                        card.querySelector(
-                            ".job-details"
-                        );
-
-
-                    if (!details) {
-
-                        return;
-
-                    }
-
-
-                    const isOpen =
-                        details.classList.toggle(
-                            "active"
-                        );
-
-
-                    button.setAttribute(
-                        "aria-expanded",
-                        String(isOpen)
+                const card =
+                    button.closest(
+                        ".job-card"
                     );
 
-                }
-            );
 
-        });
+                if (!card) {
+
+                    return;
+
+                }
+
+
+                const status =
+                    card.querySelector(
+                        ".job-status"
+                    );
+
+
+                const details =
+                    card.querySelector(
+                        ".job-details"
+                    );
+
+
+                if (!status || !details) {
+
+                    return;
+
+                }
+
+
+                /* =================================================
+                   CLOSED POSITION
+
+                   If the position is CLOSED,
+                   clicking + does nothing.
+                ================================================= */
+
+                if (
+                    status.classList.contains(
+                        "closed"
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                /* =================================================
+                   OPEN POSITION
+
+                   Toggle details-open class on the job card.
+                ================================================= */
+
+                const isOpen =
+                    card.classList.toggle(
+                        "details-open"
+                    );
+
+
+                button.setAttribute(
+                    "aria-expanded",
+                    String(isOpen)
+                );
+
+
+                /* =================================================
+                   CHANGE + / − SYMBOL
+                ================================================= */
+
+                const arrow =
+                    button.querySelector(
+                        ".job-arrow"
+                    );
+
+
+                if (arrow) {
+
+                    arrow.textContent =
+                        isOpen
+                            ? "−"
+                            : "+";
+
+                }
+
+            }
+        );
+
+    });
 
 
     /* =====================================================
