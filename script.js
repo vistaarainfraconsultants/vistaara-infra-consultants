@@ -866,21 +866,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let currentIndex = 0;
 
-        let videoTimer = null;
-
         let videoSectionVisible = false;
 
-
-        /* =================================================
-           VIDEO SLIDE TIME
-
-           Change this value if required.
-
-           8000 = 8 seconds
-        ================================================= */
-
-        const VIDEO_SLIDE_INTERVAL =
-            8000;
+        /*
+         * Videos advance only from the `ended` event below.
+         * There is deliberately NO fixed-duration timer here,
+         * so a 5-second, 30-second or 5-minute video always
+         * gets its complete playback time.
+         */
 
 
         /* =================================================
@@ -972,91 +965,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /* =================================================
-           START VIDEO SLIDING
+           START VIDEO PLAYBACK
+
+           Start only while the video section is visible.
+           The next video is selected by the `ended` event,
+           never by a fixed timer.
         ================================================= */
 
         function startVideoSlider() {
 
-            if (
-                videos.length <= 1
-            ) {
-
-                /*
-                 * Still play the video if
-                 * the section is visible.
-                 */
-
-                if (
-                    videoSectionVisible
-                ) {
-
-                    const playPromise =
-                        videoPlayer.play();
-
-
-                    if (
-                        playPromise &&
-                        typeof playPromise.catch ===
-                            "function"
-                    ) {
-
-                        playPromise.catch(
-                            () => {}
-                        );
-
-                    }
-
-                }
+            if (!videoSectionVisible) {
 
                 return;
 
             }
-
-
-            if (
-                !videoSectionVisible
-            ) {
-
-                return;
-
-            }
-
-
-            clearInterval(
-                videoTimer
-            );
-
-
-            videoTimer =
-                setInterval(
-                    () => {
-
-                        if (
-                            !videoSectionVisible
-                        ) {
-
-                            return;
-
-                        }
-
-
-                        showVideo(
-                            currentIndex + 1,
-                            true
-                        );
-
-                    },
-                    VIDEO_SLIDE_INTERVAL
-                );
-
-
-            /*
-             * Start playing current video.
-             */
 
             const playPromise =
                 videoPlayer.play();
-
 
             if (
                 playPromise &&
@@ -1064,9 +989,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     "function"
             ) {
 
-                playPromise.catch(
-                    () => {}
-                );
+                playPromise.catch(() => {});
 
             }
 
@@ -1074,22 +997,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /* =================================================
-           STOP VIDEO SLIDING
+           STOP VIDEO PLAYBACK
+
+           Pause when the viewer leaves the section.
+           The current video remains loaded so it can
+           continue when the section becomes visible again.
         ================================================= */
 
         function stopVideoSlider() {
-
-            clearInterval(
-                videoTimer
-            );
-
-            videoTimer = null;
-
-
-            /*
-             * Pause video when section
-             * is no longer visible.
-             */
 
             videoPlayer.pause();
 
@@ -1169,14 +1084,17 @@ document.addEventListener("DOMContentLoaded", () => {
             () => {
 
                 if (
-                    videoSectionVisible &&
-                    videos.length > 1
+                    videoSectionVisible
                 ) {
 
-                    showVideo(
-                        currentIndex + 1,
-                        true
-                    );
+                    if (videos.length > 1) {
+
+                        showVideo(
+                            currentIndex + 1,
+                            true
+                        );
+
+                    }
 
                 }
 
@@ -2242,22 +2160,80 @@ document.addEventListener("DOMContentLoaded", () => {
 
         /*
          * Automatic circular movement.
+         *
+         * Start only when the employee section is visible.
+         * Stop when the user scrolls away. This prevents the
+         * carousel from advancing while the section is off-screen.
          */
 
-        if (
-            employees.length > 4
-        ) {
+        let employeeTimer = null;
+        let employeeSectionVisible = false;
 
-            setInterval(
-                () => {
+        function startEmployeeSlider() {
 
-                    moveEmployee(1);
+            if (
+                employees.length <= getVisibleCount() ||
+                !employeeSectionVisible
+            ) {
 
-                },
-                5000
-            );
+                return;
+
+            }
+
+            clearInterval(employeeTimer);
+
+            employeeTimer =
+                setInterval(
+                    () => {
+
+                        if (employeeSectionVisible) {
+
+                            moveEmployee(1);
+
+                        }
+
+                    },
+                    5000
+                );
 
         }
+
+
+        function stopEmployeeSlider() {
+
+            clearInterval(employeeTimer);
+            employeeTimer = null;
+
+        }
+
+
+        const employeeObserver =
+            new IntersectionObserver(
+                entries => {
+
+                    entries.forEach(entry => {
+
+                        if (entry.isIntersecting) {
+
+                            employeeSectionVisible = true;
+                            startEmployeeSlider();
+
+                        } else {
+
+                            employeeSectionVisible = false;
+                            stopEmployeeSlider();
+
+                        }
+
+                    });
+
+                },
+                {
+                    threshold: 0.25
+                }
+            );
+
+        employeeObserver.observe(carousel);
 
     }
 
