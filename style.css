@@ -438,7 +438,7 @@ button {
 
     font-size: 21px;
 
-    color: var(--light-orange);
+    color: var(--orange-light);
 
     font-weight: 700;
 
@@ -3038,6 +3038,10 @@ button {
 
 .more-projects-toggle[aria-expanded="true"] .more-projects-arrow {
     transform: rotate(45deg);
+}
+
+.more-projects-list[hidden] {
+    display: none !important;
 }
 
 .more-projects-list {

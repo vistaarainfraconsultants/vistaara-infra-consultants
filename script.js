@@ -124,65 +124,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        GET ALL MEDIA FROM GITHUB
+
+       The repository tree is used instead of the /contents/images
+       endpoint. This avoids repeated GitHub API calls and makes the
+       filename-based media system much more reliable.
     ===================================================== */
 
-    async function getRepositoryMedia() {
+    async function getRepositoryMedia(treeOverride = null) {
 
-        const apiURL =
-            `https://api.github.com/repos/` +
-            `${VISTAARA_REPOSITORY.owner}/` +
-            `${VISTAARA_REPOSITORY.repo}/contents/` +
-            `${VISTAARA_REPOSITORY.folder}?ref=` +
-            `${VISTAARA_REPOSITORY.branch}`;
+        const tree =
+            treeOverride || await getRepositoryTree();
 
-        try {
-
-            const response =
-                await fetch(apiURL, {
-                    headers: {
-                        "Accept":
-                            "application/vnd.github+json"
-                    }
-                });
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `GitHub API error: ${response.status}`
-                );
-
-            }
-
-
-            const files =
-                await response.json();
-
-
-            if (!Array.isArray(files)) {
-
-                return [];
-
-            }
-
-
-            return files.filter(file =>
-                file &&
-                file.type === "file" &&
-                file.name
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "Unable to load media from GitHub:",
-                error
-            );
-
+        if (!tree.length) {
             return [];
-
         }
+
+        return tree
+            .filter(file =>
+                file.path &&
+                file.path.toLowerCase().startsWith("images/") &&
+                file.path.split("/").length === 2 &&
+                file.name
+            )
+            .map(file => ({
+                ...file,
+                download_url:
+                    getRawRepositoryUrl(file.path)
+            }));
 
     }
 
@@ -1282,178 +1250,38 @@ document.addEventListener("DOMContentLoaded", () => {
     /* =====================================================
        PROJECTS - GITHUB DATA
 
+       Uses ONE GitHub tree request instead of many
+       /contents/ requests. This is much more reliable
+       on GitHub Pages and greatly reduces API rate-limit use.
+
        Folder structure:
        /projects/<project-folder>/project.json
        /projects/<project-folder>/cover.jpg
     ===================================================== */
 
     const VISTAARA_PROJECTS = {
-        owner: "vistaarainfraconsultants",
-        repo: "vistaara-infra-consultants",
-        branch: "main",
         folder: "projects",
-        cacheKey: "vistaara-projects-cache-v1",
-        cacheDuration: 5 * 60 * 1000
+        cacheKey: "vistaara-project-tree-v2",
+        cacheDuration: 2 * 60 * 1000
     };
 
 
-    function getProjectsApiUrl(path = "") {
-
-        const suffix = path
-            ? `/${path}`
-            : "";
+    function getRawRepositoryUrl(path) {
 
         return (
-            `https://api.github.com/repos/` +
-            `${VISTAARA_PROJECTS.owner}/` +
-            `${VISTAARA_PROJECTS.repo}/contents/` +
-            `${VISTAARA_PROJECTS.folder}` +
-            `${suffix}?ref=${VISTAARA_PROJECTS.branch}`
+            "https://raw.githubusercontent.com/" +
+            "vistaarainfraconsultants/vistaara-infra-consultants/" +
+            "main/" +
+            path
+                .split("/")
+                .map(encodeURIComponent)
+                .join("/")
         );
 
     }
 
 
-    function getProjectRawUrl(folderName, filename) {
-
-        return (
-            `https://raw.githubusercontent.com/` +
-            `${VISTAARA_PROJECTS.owner}/` +
-            `${VISTAARA_PROJECTS.repo}/` +
-            `${VISTAARA_PROJECTS.branch}/` +
-            `${VISTAARA_PROJECTS.folder}/` +
-            `${encodeURIComponent(folderName)}/` +
-            `${encodeURIComponent(filename)}`
-        );
-
-    }
-
-
-    async function fetchJson(url) {
-
-        const response =
-            await fetch(url, {
-                headers: {
-                    "Accept": "application/vnd.github+json"
-                }
-            });
-
-        if (!response.ok) {
-            throw new Error(`Request failed: ${response.status}`);
-        }
-
-        return response.json();
-
-    }
-
-
-    function validateProjectData(project, folderName) {
-
-        const requiredFields = [
-            "title",
-            "category",
-            "description",
-            "image"
-        ];
-
-        const missing =
-            requiredFields.filter(
-                field =>
-                    typeof project?.[field] !== "string" ||
-                    !project[field].trim()
-            );
-
-        if (missing.length) {
-            console.warn(
-                `Skipping project "${folderName}": missing ${missing.join(", ")}.`
-            );
-            return false;
-        }
-
-        return true;
-
-    }
-
-
-    async function fetchProjectData(folder) {
-
-        const folderName = folder.name;
-
-        try {
-
-            const files =
-                await fetchJson(
-                    getProjectsApiUrl(
-                        encodeURIComponent(folderName)
-                    )
-                );
-
-            if (!Array.isArray(files)) {
-                throw new Error("Project folder did not return a file list.");
-            }
-
-            const jsonFile =
-                files.find(file =>
-                    file.type === "file" &&
-                    file.name.toLowerCase() === "project.json"
-                );
-
-            if (!jsonFile) {
-                throw new Error("project.json not found.");
-            }
-
-            const project =
-                await fetchJson(
-                    jsonFile.download_url ||
-                    getProjectRawUrl(folderName, jsonFile.name)
-                );
-
-            if (!validateProjectData(project, folderName)) {
-                return null;
-            }
-
-            const imageFile =
-                files.find(file =>
-                    file.type === "file" &&
-                    file.name.toLowerCase() ===
-                        project.image.trim().toLowerCase()
-                );
-
-            if (!imageFile) {
-                throw new Error(
-                    `Image "${project.image}" not found in the project folder.`
-                );
-            }
-
-            return {
-                ...project,
-                location: project.location || "",
-                status: project.status || "",
-                featured: project.featured === true,
-                order: Number.isFinite(Number(project.order))
-                    ? Number(project.order)
-                    : Number.MAX_SAFE_INTEGER,
-                imageUrl:
-                    imageFile.download_url ||
-                    getProjectRawUrl(folderName, imageFile.name),
-                folder: folderName
-            };
-
-        } catch (error) {
-
-            console.warn(
-                `Skipping project folder "${folderName}":`,
-                error.message
-            );
-
-            return null;
-
-        }
-
-    }
-
-
-    function getCachedProjects() {
+    function getCachedRepositoryTree() {
 
         try {
 
@@ -1471,24 +1299,17 @@ document.addEventListener("DOMContentLoaded", () => {
             if (
                 !cached ||
                 !cached.timestamp ||
-                !Array.isArray(cached.projects)
+                !Array.isArray(cached.tree)
             ) {
                 return null;
             }
 
-            if (
-                Date.now() - cached.timestamp >
-                VISTAARA_PROJECTS.cacheDuration
-            ) {
-                return null;
-            }
-
-            return cached.projects;
+            return cached;
 
         } catch (error) {
 
             console.warn(
-                "Unable to read project cache:",
+                "Unable to read repository tree cache:",
                 error
             );
 
@@ -1499,7 +1320,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    function cacheProjects(projects) {
+    function cacheRepositoryTree(tree) {
 
         try {
 
@@ -1507,14 +1328,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 VISTAARA_PROJECTS.cacheKey,
                 JSON.stringify({
                     timestamp: Date.now(),
-                    projects
+                    tree
                 })
             );
 
         } catch (error) {
 
             console.warn(
-                "Unable to cache projects:",
+                "Unable to cache repository tree:",
                 error
             );
 
@@ -1523,70 +1344,258 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    async function loadProjects() {
+    async function getRepositoryTree() {
 
-        const cachedProjects =
-            getCachedProjects();
+        const cached =
+            getCachedRepositoryTree();
 
-        if (cachedProjects) {
-            return cachedProjects;
+        const cacheIsFresh =
+            cached &&
+            Date.now() - cached.timestamp <
+                VISTAARA_PROJECTS.cacheDuration;
+
+        if (cacheIsFresh) {
+            return cached.tree;
         }
+
+        const apiURL =
+            "https://api.github.com/repos/" +
+            "vistaarainfraconsultants/vistaara-infra-consultants" +
+            "/git/trees/main?recursive=1";
 
         try {
 
-            const folders =
-                await fetchJson(
-                    getProjectsApiUrl()
-                );
+            const response =
+                await fetch(apiURL, {
+                    headers: {
+                        "Accept":
+                            "application/vnd.github+json"
+                    }
+                });
 
-            if (!Array.isArray(folders)) {
-                throw new Error("/projects/ did not return a folder list.");
+            if (!response.ok) {
+                throw new Error(
+                    `GitHub repository tree error: ${response.status}`
+                );
             }
 
-            const projectFolders =
-                folders.filter(
-                    item =>
+            const data =
+                await response.json();
+
+            if (!Array.isArray(data.tree)) {
+                throw new Error(
+                    "GitHub repository tree response is invalid."
+                );
+            }
+
+            if (data.truncated) {
+                console.warn(
+                    "GitHub returned a truncated repository tree. Some files may not be discovered."
+                );
+            }
+
+            const tree =
+                data.tree
+                    .filter(item =>
                         item &&
-                        item.type === "dir" &&
-                        item.name
-                );
-
-            const results =
-                await Promise.allSettled(
-                    projectFolders.map(fetchProjectData)
-                );
-
-            const projects =
-                results
-                    .filter(result =>
-                        result.status === "fulfilled" &&
-                        result.value
+                        item.type === "blob" &&
+                        item.path
                     )
-                    .map(result => result.value)
-                    .sort((a, b) => {
-                        if (a.order !== b.order) {
-                            return a.order - b.order;
-                        }
+                    .map(item => ({
+                        path: item.path,
+                        name: item.path.split("/").pop(),
+                        download_url:
+                            getRawRepositoryUrl(item.path)
+                    }));
 
-                        return a.folder.localeCompare(
-                            b.folder,
-                            undefined,
-                            { numeric: true, sensitivity: "base" }
-                        );
-                    });
+            cacheRepositoryTree(tree);
 
-            cacheProjects(projects);
-
-            return projects;
+            return tree;
 
         } catch (error) {
 
             console.error(
-                "Unable to load projects from GitHub:",
+                "Unable to load repository tree from GitHub:",
                 error
             );
 
+            if (cached) {
+                console.warn(
+                    "Using the previously cached repository tree."
+                );
+                return cached.tree;
+            }
+
             return [];
+
+        }
+
+    }
+
+
+    function normalisePath(path) {
+        return path
+            .replace(/^\/+|\/+$/g, "")
+            .toLowerCase();
+    }
+
+
+    function getProjectFolders(tree) {
+
+        const prefix = "projects/";
+        const folders = new Map();
+
+        tree
+            .filter(item =>
+                item.path.toLowerCase().startsWith(prefix)
+            )
+            .forEach(item => {
+
+                const relative =
+                    item.path.slice(prefix.length);
+
+                const parts =
+                    relative.split("/");
+
+                if (parts.length < 2 || !parts[0]) {
+                    return;
+                }
+
+                folders.set(
+                    parts[0].toLowerCase(),
+                    parts[0]
+                );
+
+            });
+
+        return Array.from(folders.values())
+            .sort((a, b) =>
+                a.localeCompare(
+                    b,
+                    undefined,
+                    { numeric: true, sensitivity: "base" }
+                )
+            );
+
+    }
+
+
+    async function fetchRepositoryJson(path) {
+
+        const response =
+            await fetch(
+                getRawRepositoryUrl(path),
+                { cache: "no-store" }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                `Unable to read ${path}: ${response.status}`
+            );
+        }
+
+        return response.json();
+
+    }
+
+
+    function validateProjectData(project, folderName) {
+
+        const requiredFields = [
+            "title",
+            "category",
+            "description",
+            "image"
+        ];
+
+        const missing =
+            requiredFields.filter(field =>
+                typeof project?.[field] !== "string" ||
+                !project[field].trim()
+            );
+
+        if (missing.length) {
+            console.warn(
+                `Skipping project "${folderName}": missing ${missing.join(", ")}.`
+            );
+            return false;
+        }
+
+        return true;
+
+    }
+
+
+    async function fetchProjectDataFromTree(
+        tree,
+        folderName
+    ) {
+
+        try {
+
+            const prefix =
+                `projects/${folderName}/`;
+
+            const files =
+                tree.filter(item =>
+                    item.path.toLowerCase().startsWith(
+                        prefix.toLowerCase()
+                    )
+                );
+
+            const jsonFile =
+                files.find(file =>
+                    file.name.toLowerCase() === "project.json"
+                );
+
+            if (!jsonFile) {
+                throw new Error("project.json not found.");
+            }
+
+            const project =
+                await fetchRepositoryJson(
+                    jsonFile.path
+                );
+
+            if (!validateProjectData(project, folderName)) {
+                return null;
+            }
+
+            const requestedImage =
+                project.image.trim().toLowerCase();
+
+            const imageFile =
+                files.find(file =>
+                    file.name.toLowerCase() === requestedImage
+                );
+
+            if (!imageFile) {
+                throw new Error(
+                    `Image "${project.image}" not found in the project folder.`
+                );
+            }
+
+            return {
+                ...project,
+                location: project.location || "",
+                status: project.status || "",
+                featured: project.featured === true,
+                order:
+                    Number.isFinite(Number(project.order))
+                        ? Number(project.order)
+                        : Number.MAX_SAFE_INTEGER,
+                imageUrl: imageFile.download_url,
+                folder: folderName
+            };
+
+        } catch (error) {
+
+            console.warn(
+                `Skipping project folder "${folderName}":`,
+                error.message
+            );
+
+            return null;
 
         }
 
@@ -1601,29 +1610,30 @@ document.addEventListener("DOMContentLoaded", () => {
         article.className = "project-card";
         article.dataset.projectFolder = project.folder;
         article.dataset.category = project.category;
-
-        if (project.status) {
-            article.dataset.status = project.status;
-        }
+        article.dataset.status = project.status;
 
         const imageWrap =
             document.createElement("div");
-
         imageWrap.className = "project-image";
 
         const image =
             document.createElement("img");
-
         image.src = project.imageUrl;
         image.alt = project.title;
         image.loading = "lazy";
         image.decoding = "async";
 
+        image.addEventListener("error", () => {
+            console.warn(
+                `Unable to load project image for "${project.title}".`
+            );
+            article.remove();
+        });
+
         imageWrap.appendChild(image);
 
         const content =
             document.createElement("div");
-
         content.className = "project-content";
 
         const category =
@@ -1642,27 +1652,15 @@ document.addEventListener("DOMContentLoaded", () => {
         content.appendChild(title);
         content.appendChild(description);
 
-        const meta =
-            [project.location, project.status]
-                .filter(Boolean)
-                .join(" · ");
-
-        if (meta) {
-            const small =
+        if (project.location) {
+            const location =
                 document.createElement("small");
-            small.textContent = meta;
-            content.appendChild(small);
+            location.textContent = project.location;
+            content.appendChild(location);
         }
 
         article.appendChild(imageWrap);
         article.appendChild(content);
-
-        image.addEventListener("error", () => {
-            console.warn(
-                `Removing project "${project.title}" because its cover image could not be loaded.`
-            );
-            article.remove();
-        });
 
         return article;
 
@@ -1679,8 +1677,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const code =
             document.createElement("span");
-        code.className = "more-project-code";
-        code.textContent = project.category;
+        code.textContent = project.category || "PROJECT";
 
         const name =
             document.createElement("h4");
@@ -1800,12 +1797,52 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    async function initialiseProjects() {
+    async function initialiseProjects(treeOverride = null) {
 
         initialiseProjectsToggle();
 
+        const tree =
+            treeOverride || await getRepositoryTree();
+
+        if (!tree.length) {
+            renderProjects([]);
+            return;
+        }
+
+        const folders =
+            getProjectFolders(tree);
+
+        const results =
+            await Promise.allSettled(
+                folders.map(folderName =>
+                    fetchProjectDataFromTree(
+                        tree,
+                        folderName
+                    )
+                )
+            );
+
         const projects =
-            await loadProjects();
+            results
+                .filter(result =>
+                    result.status === "fulfilled" &&
+                    result.value
+                )
+                .map(result => result.value)
+                .sort((a, b) => {
+                    if (a.order !== b.order) {
+                        return a.order - b.order;
+                    }
+
+                    return a.folder.localeCompare(
+                        b.folder,
+                        undefined,
+                        {
+                            numeric: true,
+                            sensitivity: "base"
+                        }
+                    );
+                });
 
         renderProjects(projects);
 
@@ -2234,61 +2271,49 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     const VISTAARA_CAREERS = {
-        owner: "vistaarainfraconsultants",
-        repo: "vistaara-infra-consultants",
-        branch: "main",
-        folder: "careers",
-        cacheKey: "vistaara-careers-cache-v1",
-        cacheDuration: 5 * 60 * 1000
+        folder: "careers"
     };
 
 
-    function getCareersApiUrl(path = "") {
+    function getCareerFolders(tree) {
 
-        const suffix = path
-            ? `/${path}`
-            : "";
+        const prefix = "careers/";
+        const folders = new Map();
 
-        return (
-            `https://api.github.com/repos/` +
-            `${VISTAARA_CAREERS.owner}/` +
-            `${VISTAARA_CAREERS.repo}/contents/` +
-            `${VISTAARA_CAREERS.folder}` +
-            `${suffix}?ref=${VISTAARA_CAREERS.branch}`
-        );
+        tree
+            .filter(item =>
+                item.path.toLowerCase().startsWith(prefix)
+            )
+            .forEach(item => {
 
-    }
+                const relative =
+                    item.path.slice(prefix.length);
 
+                const parts =
+                    relative.split("/");
 
-    function getCareerRawUrl(folderName, filename) {
-
-        return (
-            `https://raw.githubusercontent.com/` +
-            `${VISTAARA_CAREERS.owner}/` +
-            `${VISTAARA_CAREERS.repo}/` +
-            `${VISTAARA_CAREERS.branch}/` +
-            `${VISTAARA_CAREERS.folder}/` +
-            `${encodeURIComponent(folderName)}/` +
-            `${encodeURIComponent(filename)}`
-        );
-
-    }
-
-
-    async function fetchCareerJson(url) {
-
-        const response =
-            await fetch(url, {
-                headers: {
-                    "Accept": "application/vnd.github+json"
+                if (parts.length < 2 || !parts[0]) {
+                    return;
                 }
+
+                folders.set(
+                    parts[0].toLowerCase(),
+                    parts[0]
+                );
+
             });
 
-        if (!response.ok) {
-            throw new Error(`Request failed: ${response.status}`);
-        }
-
-        return response.json();
+        return Array.from(folders.values())
+            .sort((a, b) =>
+                a.localeCompare(
+                    b,
+                    undefined,
+                    {
+                        numeric: true,
+                        sensitivity: "base"
+                    }
+                )
+            );
 
     }
 
@@ -2310,7 +2335,8 @@ document.addEventListener("DOMContentLoaded", () => {
             requiredFields.filter(field => {
 
                 if (field === "details") {
-                    return !Array.isArray(job?.details) || !job.details.length;
+                    return !Array.isArray(job?.details) ||
+                        !job.details.length;
                 }
 
                 return (
@@ -2327,7 +2353,11 @@ document.addEventListener("DOMContentLoaded", () => {
             return false;
         }
 
-        if (!["open", "closed"].includes(job.status.toLowerCase())) {
+        if (
+            !["open", "closed"].includes(
+                job.status.toLowerCase()
+            )
+        ) {
             console.warn(
                 `Skipping career position "${folderName}": status must be "open" or "closed".`
             );
@@ -2339,26 +2369,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    async function fetchCareerData(folder) {
-
-        const folderName = folder.name;
+    async function fetchCareerDataFromTree(
+        tree,
+        folderName
+    ) {
 
         try {
 
+            const prefix =
+                `careers/${folderName}/`;
+
             const files =
-                await fetchCareerJson(
-                    getCareersApiUrl(
-                        encodeURIComponent(folderName)
+                tree.filter(item =>
+                    item.path.toLowerCase().startsWith(
+                        prefix.toLowerCase()
                     )
                 );
 
-            if (!Array.isArray(files)) {
-                throw new Error("Career folder did not return a file list.");
-            }
-
             const jsonFile =
                 files.find(file =>
-                    file.type === "file" &&
                     file.name.toLowerCase() === "job.json"
                 );
 
@@ -2367,9 +2396,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const job =
-                await fetchCareerJson(
-                    jsonFile.download_url ||
-                    getCareerRawUrl(folderName, jsonFile.name)
+                await fetchRepositoryJson(
+                    jsonFile.path
                 );
 
             if (!validateCareerData(job, folderName)) {
@@ -2379,10 +2407,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return {
                 ...job,
                 status: job.status.toLowerCase(),
-                order: Number.isFinite(Number(job.order))
-                    ? Number(job.order)
-                    : Number.MAX_SAFE_INTEGER,
-                count: job.count,
+                order:
+                    Number.isFinite(Number(job.order))
+                        ? Number(job.order)
+                        : Number.MAX_SAFE_INTEGER,
                 folder: folderName
             };
 
@@ -2394,146 +2422,6 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             return null;
-
-        }
-
-    }
-
-
-    function getCachedCareers() {
-
-        try {
-
-            const raw =
-                localStorage.getItem(
-                    VISTAARA_CAREERS.cacheKey
-                );
-
-            if (!raw) {
-                return null;
-            }
-
-            const cached = JSON.parse(raw);
-
-            if (
-                !cached ||
-                !cached.timestamp ||
-                !Array.isArray(cached.jobs)
-            ) {
-                return null;
-            }
-
-            if (
-                Date.now() - cached.timestamp >
-                VISTAARA_CAREERS.cacheDuration
-            ) {
-                return null;
-            }
-
-            return cached.jobs;
-
-        } catch (error) {
-
-            console.warn(
-                "Unable to read career cache:",
-                error
-            );
-
-            return null;
-
-        }
-
-    }
-
-
-    function cacheCareers(jobs) {
-
-        try {
-
-            localStorage.setItem(
-                VISTAARA_CAREERS.cacheKey,
-                JSON.stringify({
-                    timestamp: Date.now(),
-                    jobs
-                })
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "Unable to cache careers:",
-                error
-            );
-
-        }
-
-    }
-
-
-    async function loadCareers() {
-
-        const cachedJobs =
-            getCachedCareers();
-
-        if (cachedJobs) {
-            return cachedJobs;
-        }
-
-        try {
-
-            const folders =
-                await fetchCareerJson(
-                    getCareersApiUrl()
-                );
-
-            if (!Array.isArray(folders)) {
-                throw new Error("/careers/ did not return a folder list.");
-            }
-
-            const careerFolders =
-                folders.filter(
-                    item =>
-                        item &&
-                        item.type === "dir" &&
-                        item.name
-                );
-
-            const results =
-                await Promise.allSettled(
-                    careerFolders.map(fetchCareerData)
-                );
-
-            const jobs =
-                results
-                    .filter(result =>
-                        result.status === "fulfilled" &&
-                        result.value
-                    )
-                    .map(result => result.value)
-                    .sort((a, b) => {
-                        if (a.order !== b.order) {
-                            return a.order - b.order;
-                        }
-
-                        return a.folder.localeCompare(
-                            b.folder,
-                            undefined,
-                            { numeric: true, sensitivity: "base" }
-                        );
-                    });
-
-            cacheCareers(jobs);
-
-            return jobs;
-
-        } catch (error) {
-
-            console.error(
-                "Unable to load careers from GitHub:",
-                error
-            );
-
-            return [];
 
         }
 
@@ -2627,7 +2515,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const softwareHeading =
             document.createElement("h4");
-        softwareHeading.textContent = "Preferred Software Skills";
+        softwareHeading.textContent =
+            "Preferred Software Skills";
         details.appendChild(softwareHeading);
 
         const software =
@@ -2653,7 +2542,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (job.location) {
             const location =
                 document.createElement("p");
-            location.innerHTML = `<strong>Location:</strong> ${job.location}`;
+            const strong =
+                document.createElement("strong");
+            strong.textContent = "Location: ";
+            location.appendChild(strong);
+            location.appendChild(
+                document.createTextNode(job.location)
+            );
             details.appendChild(location);
         }
 
@@ -2665,8 +2560,12 @@ document.addEventListener("DOMContentLoaded", () => {
             document.createElement("a");
         applyLink.className = "button button-orange";
         applyLink.href =
-            `mailto:${job.email}?subject=${encodeURIComponent(`Application - ${job.title}`)}`;
-        applyLink.textContent = "Apply for this Position";
+            `mailto:${job.email}?subject=` +
+            encodeURIComponent(
+                `Application - ${job.title}`
+            );
+        applyLink.textContent =
+            "Apply for this Position";
 
         apply.appendChild(applyLink);
         details.appendChild(apply);
@@ -2678,7 +2577,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const isOpen =
-                article.classList.toggle("details-open");
+                article.classList.toggle(
+                    "details-open"
+                );
 
             toggle.setAttribute(
                 "aria-expanded",
@@ -2727,10 +2628,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    async function initialiseCareers() {
+    async function initialiseCareers(treeOverride = null) {
+
+        const tree =
+            treeOverride || await getRepositoryTree();
+
+        if (!tree.length) {
+            renderCareers([]);
+            return;
+        }
+
+        const folders =
+            getCareerFolders(tree);
+
+        const results =
+            await Promise.allSettled(
+                folders.map(folderName =>
+                    fetchCareerDataFromTree(
+                        tree,
+                        folderName
+                    )
+                )
+            );
 
         const jobs =
-            await loadCareers();
+            results
+                .filter(result =>
+                    result.status === "fulfilled" &&
+                    result.value
+                )
+                .map(result => result.value)
+                .sort((a, b) => {
+                    if (a.order !== b.order) {
+                        return a.order - b.order;
+                    }
+
+                    return a.folder.localeCompare(
+                        b.folder,
+                        undefined,
+                        {
+                            numeric: true,
+                            sensitivity: "base"
+                        }
+                    );
+                });
 
         renderCareers(jobs);
 
@@ -3008,10 +2949,10 @@ document.addEventListener("DOMContentLoaded", () => {
        INITIALISE ALL DYNAMIC MEDIA
     ===================================================== */
 
-    async function initialiseDynamicContent() {
+    async function initialiseDynamicContent(treeOverride = null) {
 
         const files =
-            await getRepositoryMedia();
+            await getRepositoryMedia(treeOverride);
 
 
         if (!files.length) {
@@ -3048,19 +2989,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       INITIALISE STATIC COMPONENTS
+       INITIALISE ALL DYNAMIC COMPONENTS
+
+       One repository-tree request is shared by Projects, Careers,
+       About media, Gallery and Employee media.
     ===================================================== */
 
-    initialiseProjects();
+    async function initialiseWebsiteData() {
 
-    initialiseCareers();
+        const tree =
+            await getRepositoryTree();
+
+        await Promise.all([
+            initialiseProjects(tree),
+            initialiseCareers(tree),
+            initialiseDynamicContent(tree)
+        ]);
+
+    }
 
 
-    /* =====================================================
-       START DYNAMIC COMPONENTS
-    ===================================================== */
-
-    initialiseDynamicContent();
+    initialiseWebsiteData();
 
 
     /* =====================================================
