@@ -868,13 +868,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let videoSectionVisible = false;
 
-        /*
-         * Videos advance only from the `ended` event below.
-         * There is deliberately NO fixed-duration timer here,
-         * so a 5-second, 30-second or 5-minute video always
-         * gets its complete playback time.
-         */
-
 
         /* =================================================
            SHOW VIDEO
@@ -965,23 +958,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /* =================================================
-           START VIDEO PLAYBACK
-
-           Start only while the video section is visible.
-           The next video is selected by the `ended` event,
-           never by a fixed timer.
+           START VIDEO SLIDING
         ================================================= */
 
         function startVideoSlider() {
 
-            if (!videoSectionVisible) {
+            if (
+                videos.length <= 1
+            ) {
+
+                /*
+                 * Still play the video if
+                 * the section is visible.
+                 */
+
+                if (
+                    videoSectionVisible
+                ) {
+
+                    const playPromise =
+                        videoPlayer.play();
+
+
+                    if (
+                        playPromise &&
+                        typeof playPromise.catch ===
+                            "function"
+                    ) {
+
+                        playPromise.catch(
+                            () => {}
+                        );
+
+                    }
+
+                }
 
                 return;
 
             }
 
+
+            if (
+                !videoSectionVisible
+            ) {
+
+                return;
+
+            }
+
+
+            /*
+             * Start playing the current video.
+             * The next video is selected only from
+             * the HTML5 "ended" event below, so each
+             * video is allowed to play for its full duration.
+             */
+
             const playPromise =
                 videoPlayer.play();
+
 
             if (
                 playPromise &&
@@ -989,7 +1025,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     "function"
             ) {
 
-                playPromise.catch(() => {});
+                playPromise.catch(
+                    () => {}
+                );
 
             }
 
@@ -997,14 +1035,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /* =================================================
-           STOP VIDEO PLAYBACK
-
-           Pause when the viewer leaves the section.
-           The current video remains loaded so it can
-           continue when the section becomes visible again.
+           STOP VIDEO SLIDING
         ================================================= */
 
         function stopVideoSlider() {
+
+            /*
+             * Pause video when section
+             * is no longer visible.
+             */
 
             videoPlayer.pause();
 
@@ -1084,17 +1123,14 @@ document.addEventListener("DOMContentLoaded", () => {
             () => {
 
                 if (
-                    videoSectionVisible
+                    videoSectionVisible &&
+                    videos.length > 1
                 ) {
 
-                    if (videos.length > 1) {
-
-                        showVideo(
-                            currentIndex + 1,
-                            true
-                        );
-
-                    }
+                    showVideo(
+                        currentIndex + 1,
+                        true
+                    );
 
                 }
 
@@ -2160,80 +2196,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         /*
          * Automatic circular movement.
-         *
-         * Start only when the employee section is visible.
-         * Stop when the user scrolls away. This prevents the
-         * carousel from advancing while the section is off-screen.
          */
 
-        let employeeTimer = null;
-        let employeeSectionVisible = false;
+        if (
+            employees.length > 4
+        ) {
 
-        function startEmployeeSlider() {
+            setInterval(
+                () => {
 
-            if (
-                employees.length <= getVisibleCount() ||
-                !employeeSectionVisible
-            ) {
-
-                return;
-
-            }
-
-            clearInterval(employeeTimer);
-
-            employeeTimer =
-                setInterval(
-                    () => {
-
-                        if (employeeSectionVisible) {
-
-                            moveEmployee(1);
-
-                        }
-
-                    },
-                    3500
-                );
-
-        }
-
-
-        function stopEmployeeSlider() {
-
-            clearInterval(employeeTimer);
-            employeeTimer = null;
-
-        }
-
-
-        const employeeObserver =
-            new IntersectionObserver(
-                entries => {
-
-                    entries.forEach(entry => {
-
-                        if (entry.isIntersecting) {
-
-                            employeeSectionVisible = true;
-                            startEmployeeSlider();
-
-                        } else {
-
-                            employeeSectionVisible = false;
-                            stopEmployeeSlider();
-
-                        }
-
-                    });
+                    moveEmployee(1);
 
                 },
-                {
-                    threshold: 0.25
-                }
+                5000
             );
 
-        employeeObserver.observe(carousel);
+        }
 
     }
 
