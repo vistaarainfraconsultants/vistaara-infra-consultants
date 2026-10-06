@@ -3303,3 +3303,22 @@ button {
     }
 
 }
+
+/* =========================================================
+   DYNAMIC PROJECT / CAREER CONTENT
+========================================================= */
+
+.more-project-name {
+    margin: 0;
+}
+
+.career-empty {
+    padding: 25px 28px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: #cccccc;
+}
+
+.career-empty p {
+    margin: 0;
+}

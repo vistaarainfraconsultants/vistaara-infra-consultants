@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const isOpen =
                     navMenu.classList.toggle(
-                        "active"
+                        "open"
                     );
 
                 menuToggle.classList.toggle(
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     () => {
 
                         navMenu.classList.remove(
-                            "active"
+                            "open"
                         );
 
                         menuToggle.classList.remove(
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     const yearElement =
-        document.getElementById("current-year");
+        document.getElementById("year");
 
     if (yearElement) {
 
@@ -1280,152 +1280,534 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       ADDITIONAL PROJECTS
+       PROJECTS - GITHUB DATA
+
+       Folder structure:
+       /projects/<project-folder>/project.json
+       /projects/<project-folder>/cover.jpg
     ===================================================== */
 
-    const additionalProjects = [
-
-        {
-            code: "Highway Project",
-            name:
-                "NH-75 Mulbagal – Andhra Pradesh / Karnataka Border"
-        },
-
-        {
-            code: "Bridge Project",
-            name:
-                "NH-766 Bridge Reconstruction with Realignment"
-        },
-
-        {
-            code: "Bypass Project",
-            name:
-                "Tumakuru Bypass – NH-48 Phase 1"
-        },
-
-        {
-            code: "Bypass Project",
-            name:
-                "Chintamani Bypass"
-        },
-
-        {
-            code: "Urban Infrastructure",
-            name:
-                "Bengaluru ORR – KR Puram to Silk Board"
-        }
-
-    ];
+    const VISTAARA_PROJECTS = {
+        owner: "vistaarainfraconsultants",
+        repo: "vistaara-infra-consultants",
+        branch: "main",
+        folder: "projects",
+        cacheKey: "vistaara-projects-cache-v1",
+        cacheDuration: 5 * 60 * 1000
+    };
 
 
-    function initialiseAdditionalProjects() {
+    function getProjectsApiUrl(path = "") {
 
-        const list =
-            document.getElementById(
-                "more-projects-list"
-            );
+        const suffix = path
+            ? `/${path}`
+            : "";
 
-
-        const toggle =
-            document.querySelector(
-                ".more-projects-toggle"
-            );
-
-
-        const arrow =
-            document.querySelector(
-                ".more-projects-arrow"
-            );
-
-
-        if (!list || !toggle) {
-
-            return;
-
-        }
-
-
-        list.innerHTML = "";
-
-
-        additionalProjects.forEach(
-            project => {
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                item.className =
-                    "more-project-item";
-
-
-                const code =
-                    document.createElement(
-                        "span"
-                    );
-
-
-                code.className =
-                    "more-project-code";
-
-
-                code.textContent =
-                    project.code;
-
-
-                const name =
-                    document.createElement(
-                        "span"
-                    );
-
-
-                name.className =
-                    "more-project-name";
-
-
-                name.textContent =
-                    project.name;
-
-
-                item.appendChild(code);
-
-                item.appendChild(name);
-
-                list.appendChild(item);
-
-            }
+        return (
+            `https://api.github.com/repos/` +
+            `${VISTAARA_PROJECTS.owner}/` +
+            `${VISTAARA_PROJECTS.repo}/contents/` +
+            `${VISTAARA_PROJECTS.folder}` +
+            `${suffix}?ref=${VISTAARA_PROJECTS.branch}`
         );
 
-
-        toggle.addEventListener(
-            "click",
-            () => {
-
-                const isOpen =
-                    list.classList.toggle(
-                        "active"
-                    );
+    }
 
 
-                toggle.setAttribute(
-                    "aria-expanded",
-                    String(isOpen)
+    function getProjectRawUrl(folderName, filename) {
+
+        return (
+            `https://raw.githubusercontent.com/` +
+            `${VISTAARA_PROJECTS.owner}/` +
+            `${VISTAARA_PROJECTS.repo}/` +
+            `${VISTAARA_PROJECTS.branch}/` +
+            `${VISTAARA_PROJECTS.folder}/` +
+            `${encodeURIComponent(folderName)}/` +
+            `${encodeURIComponent(filename)}`
+        );
+
+    }
+
+
+    async function fetchJson(url) {
+
+        const response =
+            await fetch(url, {
+                headers: {
+                    "Accept": "application/vnd.github+json"
+                }
+            });
+
+        if (!response.ok) {
+            throw new Error(`Request failed: ${response.status}`);
+        }
+
+        return response.json();
+
+    }
+
+
+    function validateProjectData(project, folderName) {
+
+        const requiredFields = [
+            "title",
+            "category",
+            "description",
+            "image"
+        ];
+
+        const missing =
+            requiredFields.filter(
+                field =>
+                    typeof project?.[field] !== "string" ||
+                    !project[field].trim()
+            );
+
+        if (missing.length) {
+            console.warn(
+                `Skipping project "${folderName}": missing ${missing.join(", ")}.`
+            );
+            return false;
+        }
+
+        return true;
+
+    }
+
+
+    async function fetchProjectData(folder) {
+
+        const folderName = folder.name;
+
+        try {
+
+            const files =
+                await fetchJson(
+                    getProjectsApiUrl(
+                        encodeURIComponent(folderName)
+                    )
                 );
 
-
-                if (arrow) {
-
-                    arrow.classList.toggle(
-                        "active",
-                        isOpen
-                    );
-
-                }
-
+            if (!Array.isArray(files)) {
+                throw new Error("Project folder did not return a file list.");
             }
-        );
+
+            const jsonFile =
+                files.find(file =>
+                    file.type === "file" &&
+                    file.name.toLowerCase() === "project.json"
+                );
+
+            if (!jsonFile) {
+                throw new Error("project.json not found.");
+            }
+
+            const project =
+                await fetchJson(
+                    jsonFile.download_url ||
+                    getProjectRawUrl(folderName, jsonFile.name)
+                );
+
+            if (!validateProjectData(project, folderName)) {
+                return null;
+            }
+
+            const imageFile =
+                files.find(file =>
+                    file.type === "file" &&
+                    file.name.toLowerCase() ===
+                        project.image.trim().toLowerCase()
+                );
+
+            if (!imageFile) {
+                throw new Error(
+                    `Image "${project.image}" not found in the project folder.`
+                );
+            }
+
+            return {
+                ...project,
+                location: project.location || "",
+                status: project.status || "",
+                featured: project.featured === true,
+                order: Number.isFinite(Number(project.order))
+                    ? Number(project.order)
+                    : Number.MAX_SAFE_INTEGER,
+                imageUrl:
+                    imageFile.download_url ||
+                    getProjectRawUrl(folderName, imageFile.name),
+                folder: folderName
+            };
+
+        } catch (error) {
+
+            console.warn(
+                `Skipping project folder "${folderName}":`,
+                error.message
+            );
+
+            return null;
+
+        }
+
+    }
+
+
+    function getCachedProjects() {
+
+        try {
+
+            const raw =
+                localStorage.getItem(
+                    VISTAARA_PROJECTS.cacheKey
+                );
+
+            if (!raw) {
+                return null;
+            }
+
+            const cached = JSON.parse(raw);
+
+            if (
+                !cached ||
+                !cached.timestamp ||
+                !Array.isArray(cached.projects)
+            ) {
+                return null;
+            }
+
+            if (
+                Date.now() - cached.timestamp >
+                VISTAARA_PROJECTS.cacheDuration
+            ) {
+                return null;
+            }
+
+            return cached.projects;
+
+        } catch (error) {
+
+            console.warn(
+                "Unable to read project cache:",
+                error
+            );
+
+            return null;
+
+        }
+
+    }
+
+
+    function cacheProjects(projects) {
+
+        try {
+
+            localStorage.setItem(
+                VISTAARA_PROJECTS.cacheKey,
+                JSON.stringify({
+                    timestamp: Date.now(),
+                    projects
+                })
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "Unable to cache projects:",
+                error
+            );
+
+        }
+
+    }
+
+
+    async function loadProjects() {
+
+        const cachedProjects =
+            getCachedProjects();
+
+        if (cachedProjects) {
+            return cachedProjects;
+        }
+
+        try {
+
+            const folders =
+                await fetchJson(
+                    getProjectsApiUrl()
+                );
+
+            if (!Array.isArray(folders)) {
+                throw new Error("/projects/ did not return a folder list.");
+            }
+
+            const projectFolders =
+                folders.filter(
+                    item =>
+                        item &&
+                        item.type === "dir" &&
+                        item.name
+                );
+
+            const results =
+                await Promise.allSettled(
+                    projectFolders.map(fetchProjectData)
+                );
+
+            const projects =
+                results
+                    .filter(result =>
+                        result.status === "fulfilled" &&
+                        result.value
+                    )
+                    .map(result => result.value)
+                    .sort((a, b) => {
+                        if (a.order !== b.order) {
+                            return a.order - b.order;
+                        }
+
+                        return a.folder.localeCompare(
+                            b.folder,
+                            undefined,
+                            { numeric: true, sensitivity: "base" }
+                        );
+                    });
+
+            cacheProjects(projects);
+
+            return projects;
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load projects from GitHub:",
+                error
+            );
+
+            return [];
+
+        }
+
+    }
+
+
+    function createProjectCard(project) {
+
+        const article =
+            document.createElement("article");
+
+        article.className = "project-card";
+        article.dataset.projectFolder = project.folder;
+        article.dataset.category = project.category;
+
+        if (project.status) {
+            article.dataset.status = project.status;
+        }
+
+        const imageWrap =
+            document.createElement("div");
+
+        imageWrap.className = "project-image";
+
+        const image =
+            document.createElement("img");
+
+        image.src = project.imageUrl;
+        image.alt = project.title;
+        image.loading = "lazy";
+        image.decoding = "async";
+
+        imageWrap.appendChild(image);
+
+        const content =
+            document.createElement("div");
+
+        content.className = "project-content";
+
+        const category =
+            document.createElement("span");
+        category.textContent = project.category;
+
+        const title =
+            document.createElement("h3");
+        title.textContent = project.title;
+
+        const description =
+            document.createElement("p");
+        description.textContent = project.description;
+
+        content.appendChild(category);
+        content.appendChild(title);
+        content.appendChild(description);
+
+        const meta =
+            [project.location, project.status]
+                .filter(Boolean)
+                .join(" · ");
+
+        if (meta) {
+            const small =
+                document.createElement("small");
+            small.textContent = meta;
+            content.appendChild(small);
+        }
+
+        article.appendChild(imageWrap);
+        article.appendChild(content);
+
+        image.addEventListener("error", () => {
+            console.warn(
+                `Removing project "${project.title}" because its cover image could not be loaded.`
+            );
+            article.remove();
+        });
+
+        return article;
+
+    }
+
+
+    function createMoreProjectItem(project) {
+
+        const item =
+            document.createElement("div");
+
+        item.className = "more-project-item";
+        item.dataset.projectFolder = project.folder;
+
+        const code =
+            document.createElement("span");
+        code.className = "more-project-code";
+        code.textContent = project.category;
+
+        const name =
+            document.createElement("h4");
+        name.className = "more-project-name";
+        name.textContent = project.title;
+
+        item.appendChild(code);
+        item.appendChild(name);
+
+        if (project.location) {
+            const location =
+                document.createElement("small");
+            location.textContent = project.location;
+            item.appendChild(location);
+        }
+
+        return item;
+
+    }
+
+
+    function renderProjects(projects) {
+
+        const featuredGrid =
+            document.getElementById("featured-project-grid");
+
+        const moreList =
+            document.getElementById("more-projects-list");
+
+        const moreProjects =
+            document.getElementById("more-projects");
+
+        const emptyMessage =
+            document.getElementById("projects-empty");
+
+        if (!featuredGrid || !moreList) {
+            return;
+        }
+
+        featuredGrid.innerHTML = "";
+        moreList.innerHTML = "";
+
+        const featured =
+            projects
+                .filter(project => project.featured)
+                .sort((a, b) => a.order - b.order);
+
+        const featuredProjects =
+            featured.slice(0, 5);
+
+        const extraFeatured =
+            featured.slice(5);
+
+        if (extraFeatured.length) {
+            console.warn(
+                `${extraFeatured.length} project(s) are marked featured beyond the five-card featured area. They will appear in More Projects.`
+            );
+        }
+
+        const remainingProjects =
+            projects
+                .filter(project => !project.featured)
+                .concat(extraFeatured)
+                .sort((a, b) => a.order - b.order);
+
+        featuredProjects.forEach(project => {
+            featuredGrid.appendChild(
+                createProjectCard(project)
+            );
+        });
+
+        remainingProjects.forEach(project => {
+            moreList.appendChild(
+                createMoreProjectItem(project)
+            );
+        });
+
+        if (emptyMessage) {
+            emptyMessage.style.display =
+                projects.length ? "none" : "block";
+        }
+
+        if (moreProjects) {
+            moreProjects.style.display =
+                remainingProjects.length ? "block" : "none";
+        }
+
+    }
+
+
+    function initialiseProjectsToggle() {
+
+        const list =
+            document.getElementById("more-projects-list");
+
+        const toggle =
+            document.getElementById("more-projects-toggle");
+
+        if (!list || !toggle) {
+            return;
+        }
+
+        toggle.addEventListener("click", () => {
+
+            const isOpen =
+                toggle.getAttribute("aria-expanded") === "true";
+
+            toggle.setAttribute(
+                "aria-expanded",
+                String(!isOpen)
+            );
+
+            list.hidden = isOpen;
+
+        });
+
+    }
+
+
+    async function initialiseProjects() {
+
+        initialiseProjectsToggle();
+
+        const projects =
+            await loadProjects();
+
+        renderProjects(projects);
 
     }
 
@@ -1844,109 +2226,515 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-/* =====================================================
-   CAREERS / JOB CARD TOGGLE
-===================================================== */
+    /* =====================================================
+       CAREERS - GITHUB DATA
 
-document
-    .querySelectorAll(".job-details-toggle")
-    .forEach(button => {
+       Folder structure:
+       /careers/<position-folder>/job.json
+    ===================================================== */
 
-        button.addEventListener(
-            "click",
-            () => {
-
-                const card =
-                    button.closest(
-                        ".job-card"
-                    );
-
-
-                if (!card) {
-
-                    return;
-
-                }
+    const VISTAARA_CAREERS = {
+        owner: "vistaarainfraconsultants",
+        repo: "vistaara-infra-consultants",
+        branch: "main",
+        folder: "careers",
+        cacheKey: "vistaara-careers-cache-v1",
+        cacheDuration: 5 * 60 * 1000
+    };
 
 
-                const status =
-                    card.querySelector(
-                        ".job-status"
-                    );
+    function getCareersApiUrl(path = "") {
 
+        const suffix = path
+            ? `/${path}`
+            : "";
 
-                const details =
-                    card.querySelector(
-                        ".job-details"
-                    );
-
-
-                if (!status || !details) {
-
-                    return;
-
-                }
-
-
-                /* =================================================
-                   CLOSED POSITION
-
-                   If the position is CLOSED,
-                   clicking + does nothing.
-                ================================================= */
-
-                if (
-                    status.classList.contains(
-                        "closed"
-                    )
-                ) {
-
-                    return;
-
-                }
-
-
-                /* =================================================
-                   OPEN POSITION
-
-                   Toggle details-open class on the job card.
-                ================================================= */
-
-                const isOpen =
-                    card.classList.toggle(
-                        "details-open"
-                    );
-
-
-                button.setAttribute(
-                    "aria-expanded",
-                    String(isOpen)
-                );
-
-
-                /* =================================================
-                   CHANGE + / − SYMBOL
-                ================================================= */
-
-                const arrow =
-                    button.querySelector(
-                        ".job-arrow"
-                    );
-
-
-                if (arrow) {
-
-                    arrow.textContent =
-                        isOpen
-                            ? "−"
-                            : "+";
-
-                }
-
-            }
+        return (
+            `https://api.github.com/repos/` +
+            `${VISTAARA_CAREERS.owner}/` +
+            `${VISTAARA_CAREERS.repo}/contents/` +
+            `${VISTAARA_CAREERS.folder}` +
+            `${suffix}?ref=${VISTAARA_CAREERS.branch}`
         );
 
-    });
+    }
+
+
+    function getCareerRawUrl(folderName, filename) {
+
+        return (
+            `https://raw.githubusercontent.com/` +
+            `${VISTAARA_CAREERS.owner}/` +
+            `${VISTAARA_CAREERS.repo}/` +
+            `${VISTAARA_CAREERS.branch}/` +
+            `${VISTAARA_CAREERS.folder}/` +
+            `${encodeURIComponent(folderName)}/` +
+            `${encodeURIComponent(filename)}`
+        );
+
+    }
+
+
+    async function fetchCareerJson(url) {
+
+        const response =
+            await fetch(url, {
+                headers: {
+                    "Accept": "application/vnd.github+json"
+                }
+            });
+
+        if (!response.ok) {
+            throw new Error(`Request failed: ${response.status}`);
+        }
+
+        return response.json();
+
+    }
+
+
+    function validateCareerData(job, folderName) {
+
+        const requiredFields = [
+            "title",
+            "count",
+            "status",
+            "details",
+            "software",
+            "qualification",
+            "description",
+            "email"
+        ];
+
+        const missing =
+            requiredFields.filter(field => {
+
+                if (field === "details") {
+                    return !Array.isArray(job?.details) || !job.details.length;
+                }
+
+                return (
+                    typeof job?.[field] !== "string" ||
+                    !job[field].trim()
+                );
+
+            });
+
+        if (missing.length) {
+            console.warn(
+                `Skipping career position "${folderName}": missing or invalid ${missing.join(", ")}.`
+            );
+            return false;
+        }
+
+        if (!["open", "closed"].includes(job.status.toLowerCase())) {
+            console.warn(
+                `Skipping career position "${folderName}": status must be "open" or "closed".`
+            );
+            return false;
+        }
+
+        return true;
+
+    }
+
+
+    async function fetchCareerData(folder) {
+
+        const folderName = folder.name;
+
+        try {
+
+            const files =
+                await fetchCareerJson(
+                    getCareersApiUrl(
+                        encodeURIComponent(folderName)
+                    )
+                );
+
+            if (!Array.isArray(files)) {
+                throw new Error("Career folder did not return a file list.");
+            }
+
+            const jsonFile =
+                files.find(file =>
+                    file.type === "file" &&
+                    file.name.toLowerCase() === "job.json"
+                );
+
+            if (!jsonFile) {
+                throw new Error("job.json not found.");
+            }
+
+            const job =
+                await fetchCareerJson(
+                    jsonFile.download_url ||
+                    getCareerRawUrl(folderName, jsonFile.name)
+                );
+
+            if (!validateCareerData(job, folderName)) {
+                return null;
+            }
+
+            return {
+                ...job,
+                status: job.status.toLowerCase(),
+                order: Number.isFinite(Number(job.order))
+                    ? Number(job.order)
+                    : Number.MAX_SAFE_INTEGER,
+                count: job.count,
+                folder: folderName
+            };
+
+        } catch (error) {
+
+            console.warn(
+                `Skipping career folder "${folderName}":`,
+                error.message
+            );
+
+            return null;
+
+        }
+
+    }
+
+
+    function getCachedCareers() {
+
+        try {
+
+            const raw =
+                localStorage.getItem(
+                    VISTAARA_CAREERS.cacheKey
+                );
+
+            if (!raw) {
+                return null;
+            }
+
+            const cached = JSON.parse(raw);
+
+            if (
+                !cached ||
+                !cached.timestamp ||
+                !Array.isArray(cached.jobs)
+            ) {
+                return null;
+            }
+
+            if (
+                Date.now() - cached.timestamp >
+                VISTAARA_CAREERS.cacheDuration
+            ) {
+                return null;
+            }
+
+            return cached.jobs;
+
+        } catch (error) {
+
+            console.warn(
+                "Unable to read career cache:",
+                error
+            );
+
+            return null;
+
+        }
+
+    }
+
+
+    function cacheCareers(jobs) {
+
+        try {
+
+            localStorage.setItem(
+                VISTAARA_CAREERS.cacheKey,
+                JSON.stringify({
+                    timestamp: Date.now(),
+                    jobs
+                })
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "Unable to cache careers:",
+                error
+            );
+
+        }
+
+    }
+
+
+    async function loadCareers() {
+
+        const cachedJobs =
+            getCachedCareers();
+
+        if (cachedJobs) {
+            return cachedJobs;
+        }
+
+        try {
+
+            const folders =
+                await fetchCareerJson(
+                    getCareersApiUrl()
+                );
+
+            if (!Array.isArray(folders)) {
+                throw new Error("/careers/ did not return a folder list.");
+            }
+
+            const careerFolders =
+                folders.filter(
+                    item =>
+                        item &&
+                        item.type === "dir" &&
+                        item.name
+                );
+
+            const results =
+                await Promise.allSettled(
+                    careerFolders.map(fetchCareerData)
+                );
+
+            const jobs =
+                results
+                    .filter(result =>
+                        result.status === "fulfilled" &&
+                        result.value
+                    )
+                    .map(result => result.value)
+                    .sort((a, b) => {
+                        if (a.order !== b.order) {
+                            return a.order - b.order;
+                        }
+
+                        return a.folder.localeCompare(
+                            b.folder,
+                            undefined,
+                            { numeric: true, sensitivity: "base" }
+                        );
+                    });
+
+            cacheCareers(jobs);
+
+            return jobs;
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load careers from GitHub:",
+                error
+            );
+
+            return [];
+
+        }
+
+    }
+
+
+    function createJobCard(job, positionNumber) {
+
+        const article =
+            document.createElement("article");
+
+        article.className = "job-card";
+        article.dataset.positionFolder = job.folder;
+        article.dataset.status = job.status;
+
+        const header =
+            document.createElement("div");
+        header.className = "job-header";
+
+        const titleWrap =
+            document.createElement("div");
+
+        const number =
+            document.createElement("span");
+        number.className = "job-number";
+        number.textContent =
+            job.positionLabel ||
+            `POSITION ${String(positionNumber).padStart(2, "0")}`;
+
+        const title =
+            document.createElement("h3");
+        title.textContent = job.title;
+
+        const count =
+            document.createElement("p");
+        count.className = "job-count";
+        count.textContent = job.count;
+
+        titleWrap.appendChild(number);
+        titleWrap.appendChild(title);
+        titleWrap.appendChild(count);
+
+        const status =
+            document.createElement("span");
+        status.className = `job-status ${job.status}`;
+        status.textContent = job.status.toUpperCase();
+
+        header.appendChild(titleWrap);
+        header.appendChild(status);
+
+        const toggle =
+            document.createElement("button");
+        toggle.className = "job-details-toggle";
+        toggle.type = "button";
+        toggle.setAttribute("aria-expanded", "false");
+
+        const toggleText =
+            document.createElement("span");
+        toggleText.textContent = "View Position Details";
+
+        const arrow =
+            document.createElement("span");
+        arrow.className = "job-arrow";
+        arrow.textContent = "+";
+        arrow.setAttribute("aria-hidden", "true");
+
+        toggle.appendChild(toggleText);
+        toggle.appendChild(arrow);
+
+        const details =
+            document.createElement("div");
+        details.className = "job-details";
+
+        const intro =
+            document.createElement("h4");
+        intro.textContent =
+            "We are looking for candidates with experience or interest in:";
+        details.appendChild(intro);
+
+        const list =
+            document.createElement("ul");
+
+        job.details.forEach(detail => {
+            const li =
+                document.createElement("li");
+            li.textContent = detail;
+            list.appendChild(li);
+        });
+
+        details.appendChild(list);
+
+        const softwareHeading =
+            document.createElement("h4");
+        softwareHeading.textContent = "Preferred Software Skills";
+        details.appendChild(softwareHeading);
+
+        const software =
+            document.createElement("p");
+        software.textContent = job.software;
+        details.appendChild(software);
+
+        const qualificationHeading =
+            document.createElement("h4");
+        qualificationHeading.textContent = "Qualification";
+        details.appendChild(qualificationHeading);
+
+        const qualification =
+            document.createElement("p");
+        qualification.textContent = job.qualification;
+        details.appendChild(qualification);
+
+        const description =
+            document.createElement("p");
+        description.textContent = job.description;
+        details.appendChild(description);
+
+        if (job.location) {
+            const location =
+                document.createElement("p");
+            location.innerHTML = `<strong>Location:</strong> ${job.location}`;
+            details.appendChild(location);
+        }
+
+        const apply =
+            document.createElement("div");
+        apply.className = "job-apply";
+
+        const applyLink =
+            document.createElement("a");
+        applyLink.className = "button button-orange";
+        applyLink.href =
+            `mailto:${job.email}?subject=${encodeURIComponent(`Application - ${job.title}`)}`;
+        applyLink.textContent = "Apply for this Position";
+
+        apply.appendChild(applyLink);
+        details.appendChild(apply);
+
+        toggle.addEventListener("click", () => {
+
+            if (job.status === "closed") {
+                return;
+            }
+
+            const isOpen =
+                article.classList.toggle("details-open");
+
+            toggle.setAttribute(
+                "aria-expanded",
+                String(isOpen)
+            );
+
+            arrow.textContent =
+                isOpen ? "−" : "+";
+
+        });
+
+        article.appendChild(header);
+        article.appendChild(toggle);
+        article.appendChild(details);
+
+        return article;
+
+    }
+
+
+    function renderCareers(jobs) {
+
+        const careersList =
+            document.getElementById("careers-list");
+
+        const emptyMessage =
+            document.getElementById("career-empty");
+
+        if (!careersList) {
+            return;
+        }
+
+        careersList.innerHTML = "";
+
+        jobs.forEach((job, index) => {
+            careersList.appendChild(
+                createJobCard(job, index + 1)
+            );
+        });
+
+        if (emptyMessage) {
+            emptyMessage.style.display =
+                jobs.length ? "none" : "block";
+        }
+
+    }
+
+
+    async function initialiseCareers() {
+
+        const jobs =
+            await loadCareers();
+
+        renderCareers(jobs);
+
+    }
 
 
     /* =====================================================
@@ -2263,7 +3051,9 @@ document
        INITIALISE STATIC COMPONENTS
     ===================================================== */
 
-    initialiseAdditionalProjects();
+    initialiseProjects();
+
+    initialiseCareers();
 
 
     /* =====================================================
