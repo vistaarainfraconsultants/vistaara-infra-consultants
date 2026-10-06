@@ -2208,7 +2208,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     moveEmployee(1);
 
                 },
-                5000
+                3000
             );
 
         }
