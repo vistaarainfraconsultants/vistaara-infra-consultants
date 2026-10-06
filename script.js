@@ -2193,7 +2193,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
 
                     },
-                    5000
+                    3500
                 );
 
         }
