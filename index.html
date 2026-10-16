@@ -1200,38 +1200,23 @@
      CONTACT / CTA
 ========================================================= -->
 
-<section
-    class="cta"
-    id="contact"
->
-
+<section class="cta" id="contact" aria-labelledby="contact-title">
     <div class="container">
-
-        <p class="eyebrow">
-            Ready to start
-        </p>
-
-
-        <h2>
-            Bring us your corridor, structure or study.
-        </h2>
-
-
-        <p>
-            Send the scope and our team will respond with how
-            Vistaara Infra Consultants can support it end to end.
-        </p>
-
-
-        <a
-            class="button button-grey"
-            href="mailto:info@vistaarainfra.com?subject=Project%20Enquiry%20%E2%80%93%20Vistaara%20Infra%20Consultants"
-        >
-            Discuss Your Project
-        </a>
-
+        <p class="eyebrow">Ready to start</p>
+        <h2 id="contact-title">Bring us your corridor, structure or study.</h2>
+        <p class="cta-intro">Send the scope and our team will respond with how Vistaara Infra Consultants can support it end to end.</p>
+        <form class="contact-form" id="contact-form">
+            <div class="form-grid">
+                <label>Your name<input name="name" autocomplete="name" required></label>
+                <label>Work email<input name="email" type="email" autocomplete="email" required></label>
+                <label>Organization <span>(optional)</span><input name="organization" autocomplete="organization"></label>
+                <label>Phone <span>(optional)</span><input name="phone" type="tel" autocomplete="tel"></label>
+                <label class="form-message">How can we help?<textarea name="message" rows="4" required></textarea></label>
+            </div>
+            <button class="button button-grey" type="submit">Prepare project enquiry</button>
+            <p class="form-note">This opens your email app with the message ready for you to review and send.</p>
+        </form>
     </div>
-
 </section>
 
 

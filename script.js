@@ -3000,3 +3000,25 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 });
+/* Project enquiry: prepare an email for the visitor to review and send. */
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("contact-form");
+    if (!form) return;
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        const data = new FormData(form);
+        const value = (key) => String(data.get(key) || "").trim();
+        const body = [
+            `Name: ${value("name")}`,
+            `Work email: ${value("email")}`,
+            `Organization: ${value("organization") || "Not provided"}`,
+            `Phone: ${value("phone") || "Not provided"}`,
+            "",
+            "How can we help?",
+            value("message")
+        ].join("\n");
+        const subject = "Project Enquiry – Vistaara Infra Consultants";
+        window.location.href = `mailto:info@vistaarainfra.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    });
+});
