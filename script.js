@@ -2195,23 +2195,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /*
-         * Automatic circular movement.
+         * Advance only while the employee photos are on screen.
+         * currentStart is initialized to zero above, so the carousel
+         * always opens with the first employee when visitors reach it.
          */
+        let employeeAutoplay = null;
+        let employeeSectionVisible = false;
 
-        if (
-            employees.length > 4
-        ) {
-
-            setInterval(
-                () => {
-
-                    moveEmployee(1);
-
-                },
-                3000
-            );
-
+        function stopEmployeeAutoplay() {
+            if (employeeAutoplay !== null) {
+                clearInterval(employeeAutoplay);
+                employeeAutoplay = null;
+            }
         }
+
+        function updateEmployeeAutoplay() {
+            const shouldPlay =
+                employeeSectionVisible &&
+                document.visibilityState === "visible" &&
+                employees.length > 4;
+
+            if (shouldPlay && employeeAutoplay === null) {
+                employeeAutoplay = setInterval(
+                    () => moveEmployee(1),
+                    3000
+                );
+            } else if (!shouldPlay) {
+                stopEmployeeAutoplay();
+            }
+        }
+
+        const employeeSection =
+            carousel.closest(".employee-section");
+
+        if (employeeSection && "IntersectionObserver" in window) {
+            const employeeObserver = new IntersectionObserver(
+                (entries) => {
+                    employeeSectionVisible = entries.some(
+                        (entry) => entry.isIntersecting && entry.intersectionRatio >= 0.25
+                    );
+                    updateEmployeeAutoplay();
+                },
+                { threshold: [0, 0.25] }
+            );
+            employeeObserver.observe(employeeSection);
+        }
+
+        document.addEventListener(
+            "visibilitychange",
+            updateEmployeeAutoplay
+        );
 
     }
 
