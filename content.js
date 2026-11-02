@@ -8,7 +8,6 @@ window.VISTAARA_CONTENT = {
   "images/Employee_04_Mrs MEGHA B V_Technical Manager.png",
   "images/Employee_05_Mr HARSHA S_Senior Draftsman (Highways).png",
   "images/Employee_06_Mr CHITTI BABU V G_Accountant and Admin Assistant.png",
-  "images/Employee_07_Mr CHETHAN K J_Senior Draftsman (Structures).jpeg",
   "images/Employee_08_Mr ANIL KUMAR A B_Structural Design Engineer.jpeg",
   "images/Employee_09_Mr NITHIN B G_Structural Design Engineer.jpeg",
   "images/Employee_10_Mr AMAR VILASPURE_Draftsman (Structures).jpeg",
