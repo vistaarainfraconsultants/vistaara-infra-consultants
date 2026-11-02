@@ -14,7 +14,7 @@ window.VISTAARA_CONTENT = {
   "images/Employee_10_Mr AMAR VILASPURE_Draftsman (Structures).jpeg",
   "images/Employee_11_Mr RAGHU D_Senior Quantity Surveyer.jpg",
   "images/Employee_12_Mr MALLIKARJUNA G S_Highway Design Engineer.jpeg",
-  "images/Employee_12_Mr NARASIMHAMURTHY H_Highway Design Engineer.png",
+  "images/Employee_13_Mr NARASIMHAMURTHY H_Highway Design Engineer.png",
   "images/Employee_14_Mrs LEELA ASHWINI_HR Assistant.jpg",
   "images/Employee_15_Mr NAGENDRA BABU_Admin Assistant.png",
   "images/Gallery 01.jpeg",
