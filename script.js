@@ -1,3057 +1,473 @@
 /* =========================================================
-   VISTAARA INFRA CONSULTANTS
-   DYNAMIC WEBSITE SCRIPT
+   VISTAARA INFRA CONSULTANTS — SITE SCRIPT
+
+   Content is picked up automatically from the folders:
+     images/   "Project Discussion NN", "Team Photo NN"  → About photos
+               "... Video ..."                           → About videos
+               "Employee_NN_Name_Designation"            → Engineering team
+               "Gallery NN"                              → Gallery
+     projects/<folder>/project.json (+ its image)        → Projects
+     careers/<folder>/job.json                           → Careers
+
+   The file list comes from content.js (run tools/update-content.py,
+   or let the GitHub Action do it). If content.js is missing and the
+   site is served from GitHub, the GitHub repository is listed instead.
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-
-    /* =====================================================
-       CONFIGURATION
-    ===================================================== */
-
-    const VISTAARA_REPOSITORY = {
-        owner: "vistaarainfraconsultants",
-        repo: "vistaara-infra-consultants",
-        branch: "main",
-        folder: "images"
-    };
-
-    const IMAGE_EXTENSIONS = [
-        "jpg",
-        "jpeg",
-        "png",
-        "webp",
-        "gif",
-        "avif"
-    ];
-
-    const VIDEO_EXTENSIONS = [
-        "mp4",
-        "webm",
-        "ogg",
-        "m4v",
-        "mov"
-    ];
-
-
-    /* =====================================================
-    MOBILE MENU
-    ===================================================== */
-
-    const menuToggle =
-        document.querySelector(".menu-toggle");
-
-    const navMenu =
-        document.querySelector(".nav");
-
-    if (menuToggle && navMenu) {
-
-        menuToggle.setAttribute(
-            "aria-expanded",
-            "false"
-        );
-
-        menuToggle.addEventListener(
-            "click",
-            () => {
-
-                const isOpen =
-                    navMenu.classList.toggle(
-                        "open"
-                    );
-
-                menuToggle.classList.toggle(
-                    "active",
-                    isOpen
-                );
-
-                menuToggle.setAttribute(
-                    "aria-expanded",
-                    String(isOpen)
-                );
-
-            }
-        );
-
-
-        /* Close menu when a navigation link is clicked */
-
-        navMenu
-            .querySelectorAll("a")
-            .forEach(link => {
-
-                link.addEventListener(
-                    "click",
-                    () => {
-
-                        navMenu.classList.remove(
-                            "open"
-                        );
-
-                        menuToggle.classList.remove(
-                            "active"
-                        );
-
-                        menuToggle.setAttribute(
-                            "aria-expanded",
-                            "false"
-                        );
-
-                    }
-                );
-
-            });
-
-    }
-
-
-
-
-    /* =====================================================
-       FOOTER YEAR
-    ===================================================== */
-
-    const yearElement =
-        document.getElementById("year");
-
-    if (yearElement) {
-
-        yearElement.textContent =
-            new Date().getFullYear();
-
-    }
-
-
-    /* =====================================================
-       GET ALL MEDIA FROM GITHUB
-
-       The repository tree is used instead of the /contents/images
-       endpoint. This avoids repeated GitHub API calls and makes the
-       filename-based media system much more reliable.
-    ===================================================== */
-
-    async function getRepositoryMedia(treeOverride = null) {
-
-        const tree =
-            treeOverride || await getRepositoryTree();
-
-        if (!tree.length) {
-            return [];
-        }
-
-        return tree
-            .filter(file =>
-                file.path &&
-                file.path.toLowerCase().startsWith("images/") &&
-                file.path.split("/").length === 2 &&
-                file.name
-            )
-            .map(file => ({
-                ...file,
-                download_url:
-                    getRawRepositoryUrl(file.path)
-            }));
-
-    }
-
-
-    /* =====================================================
-       HELPER FUNCTIONS
-    ===================================================== */
-
-    function getFileExtension(filename) {
-
-        const parts =
-            filename.split(".");
-
-        if (parts.length < 2) {
-
-            return "";
-
-        }
-
-        return parts
-            .pop()
-            .toLowerCase();
-
-    }
-
-
-    function isImage(filename) {
-
-        return IMAGE_EXTENSIONS.includes(
-            getFileExtension(filename)
-        );
-
-    }
-
-
-    function isVideo(filename) {
-
-        return VIDEO_EXTENSIONS.includes(
-            getFileExtension(filename)
-        );
-
-    }
-
-
-    function getFileNameWithoutExtension(filename) {
-
-        return filename.replace(
-            /\.[^/.]+$/,
-            ""
-        );
-
-    }
-
-
-    function normaliseText(text) {
-
-        return text
-            .toLowerCase()
-            .replace(/[_-]+/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-
-    }
-
-
-    /* =====================================================
-       ABOUT US
-       DYNAMIC PHOTO SLIDESHOW
-
-       Automatically detects:
-       - Project Discussion
-       - Team Photo
-    ===================================================== */
-
-    async function initialiseAboutPhotos(files) {
-
-        const slideshow =
-            document.getElementById(
-                "about-photo-slideshow"
-            );
-
-
-        const emptyMessage =
-            document.getElementById(
-                "about-photo-empty"
-            );
-
-
-        const dotsContainer =
-            document.getElementById(
-                "about-photo-dots"
-            );
-
-
-        if (!slideshow) {
-
-            return;
-
-        }
-
-
-        const aboutPhotos =
-            files
-                .filter(file => {
-
-                    if (!isImage(file.name)) {
-
-                        return false;
-
-                    }
-
-
-                    const name =
-                        normaliseText(file.name);
-
-
-                    return (
-                        name.includes(
-                            "project discussion"
-                        ) ||
-                        name.includes(
-                            "team photo"
-                        )
-                    );
-
-                })
-                .sort((a, b) =>
-                    a.name.localeCompare(
-                        b.name,
-                        undefined,
-                        {
-                            numeric: true,
-                            sensitivity: "base"
-                        }
-                    )
-                );
-
-
-        slideshow
-            .querySelectorAll(
-                ".slide.dynamic-slide"
-            )
-            .forEach(slide =>
-                slide.remove()
-            );
-
-
-        if (dotsContainer) {
-
-            dotsContainer.innerHTML = "";
-
-        }
-
-
-        if (aboutPhotos.length === 0) {
-
-            if (emptyMessage) {
-
-                emptyMessage.style.display =
-                    "block";
-
-            }
-
-            return;
-
-        }
-
-
-        if (emptyMessage) {
-
-            emptyMessage.style.display =
-                "none";
-
-        }
-
-
-        const previousButton =
-            slideshow.querySelector(
-                ".slide-prev"
-            );
-
-
-        const nextButton =
-            slideshow.querySelector(
-                ".slide-next"
-            );
-
-
-        aboutPhotos.forEach(
-            (file, index) => {
-
-                const slide =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                slide.className =
-                    "slide dynamic-slide";
-
-
-                if (index === 0) {
-
-                    slide.classList.add(
-                        "active"
-                    );
-
-                }
-
-
-                const image =
-                    document.createElement(
-                        "img"
-                    );
-
-
-                image.src =
-                    file.download_url;
-
-
-                image.alt =
-                    getFileNameWithoutExtension(
-                        file.name
-                    );
-
-
-                image.loading =
-                    index === 0
-                        ? "eager"
-                        : "lazy";
-
-
-                slide.appendChild(image);
-
-
-                if (nextButton) {
-
-                    slideshow.insertBefore(
-                        slide,
-                        nextButton
-                    );
-
-                } else {
-
-                    slideshow.appendChild(
-                        slide
-                    );
-
-                }
-
-
-                if (dotsContainer) {
-
-                    const dot =
-                        document.createElement(
-                            "button"
-                        );
-
-
-                    dot.type = "button";
-
-
-                    dot.className =
-                        "about-dot";
-
-
-                    if (index === 0) {
-
-                        dot.classList.add(
-                            "active"
-                        );
-
-                    }
-
-
-                    dot.setAttribute(
-                        "aria-label",
-                        `Show About photo ${index + 1}`
-                    );
-
-
-                    dot.addEventListener(
-                        "click",
-                        () => {
-
-                            showAboutPhoto(
-                                index
-                            );
-
-                            /*
-                             * If the section is currently
-                             * visible, restart its timer.
-                             */
-
-                            if (
-                                aboutPhotosVisible
-                            ) {
-
-                                restartAboutTimer();
-
-                            }
-
-                        }
-                    );
-
-
-                    dotsContainer.appendChild(
-                        dot
-                    );
-
-                }
-
-            }
-        );
-
-
-        let currentIndex = 0;
-
-        let autoTimer = null;
-
-        let aboutPhotosVisible = false;
-
-
-        /* =================================================
-           GET SLIDES
-        ================================================= */
-
-        function getSlides() {
-
-            return Array.from(
-                slideshow.querySelectorAll(
-                    ".dynamic-slide"
-                )
-            );
-
-        }
-
-
-        /* =================================================
-           UPDATE DOTS
-        ================================================= */
-
-        function updateDots(index) {
-
-            if (!dotsContainer) {
-
-                return;
-
-            }
-
-
-            dotsContainer
-                .querySelectorAll(
-                    ".about-dot"
-                )
-                .forEach(
-                    (dot, dotIndex) => {
-
-                        dot.classList.toggle(
-                            "active",
-                            dotIndex === index
-                        );
-
-                    }
-                );
-
-        }
-
-
-        /* =================================================
-           SHOW PHOTO
-        ================================================= */
-
-        function showAboutPhoto(index) {
-
-            const slides =
-                getSlides();
-
-
-            if (!slides.length) {
-
-                return;
-
-            }
-
-
-            currentIndex =
-                (
-                    index +
-                    slides.length
-                ) %
-                slides.length;
-
-
-            slides.forEach(
-                (slide, slideIndex) => {
-
-                    slide.classList.toggle(
-                        "active",
-                        slideIndex ===
-                            currentIndex
-                    );
-
-                }
-            );
-
-
-            updateDots(
-                currentIndex
-            );
-
-        }
-
-
-        /* =================================================
-           PHOTO TIMER
-           
-           Timer ONLY runs while the section
-           is visible on screen.
-        ================================================= */
-
-        function startAboutTimer() {
-
-            if (
-                aboutPhotos.length <= 1
-            ) {
-
-                return;
-
-            }
-
-
-            if (!aboutPhotosVisible) {
-
-                return;
-
-            }
-
-
-            clearInterval(
-                autoTimer
-            );
-
-
-            autoTimer =
-                setInterval(
-                    () => {
-
-                        if (
-                            !aboutPhotosVisible
-                        ) {
-
-                            return;
-
-                        }
-
-
-                        showAboutPhoto(
-                            currentIndex + 1
-                        );
-
-                    },
-                    4000
-                );
-
-        }
-
-
-        function stopAboutTimer() {
-
-            clearInterval(
-                autoTimer
-            );
-
-            autoTimer = null;
-
-        }
-
-
-        function restartAboutTimer() {
-
-            stopAboutTimer();
-
-            startAboutTimer();
-
-        }
-
-
-        /* =================================================
-           PREVIOUS BUTTON
-        ================================================= */
-
-        if (previousButton) {
-
-            previousButton.addEventListener(
-                "click",
-                () => {
-
-                    showAboutPhoto(
-                        currentIndex - 1
-                    );
-
-
-                    if (
-                        aboutPhotosVisible
-                    ) {
-
-                        restartAboutTimer();
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        /* =================================================
-           NEXT BUTTON
-        ================================================= */
-
-        if (nextButton) {
-
-            nextButton.addEventListener(
-                "click",
-                () => {
-
-                    showAboutPhoto(
-                        currentIndex + 1
-                    );
-
-
-                    if (
-                        aboutPhotosVisible
-                    ) {
-
-                        restartAboutTimer();
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        /* =================================================
-           INTERSECTION OBSERVER
-
-           Photo slideshow starts only when
-           viewer reaches this section.
-        ================================================= */
-
-        const photoObserver =
-            new IntersectionObserver(
-                entries => {
-
-                    entries.forEach(entry => {
-
-                        if (
-                            entry.isIntersecting
-                        ) {
-
-                            aboutPhotosVisible =
-                                true;
-
-
-                            startAboutTimer();
-
-
-                        } else {
-
-                            aboutPhotosVisible =
-                                false;
-
-
-                            stopAboutTimer();
-
-                        }
-
-                    });
-
-                },
-                {
-                    threshold: 0.25
-                }
-            );
-
-
-        photoObserver.observe(
-            slideshow
-        );
-
-    }
-
-
-    /* =====================================================
-       ABOUT US
-       DYNAMIC VIDEO SLIDER
-
-       Automatically detects filenames containing:
-       "Video"
-    ===================================================== */
-
-    async function initialiseAboutVideos(files) {
-
-        const videoSlider =
-            document.getElementById(
-                "about-video-slider"
-            );
-
-
-        const videoPlayer =
-            document.getElementById(
-                "about-video-player"
-            );
-
-
-        const emptyMessage =
-            document.getElementById(
-                "about-video-empty"
-            );
-
-
-        const previousButton =
-            document.querySelector(
-                ".video-prev"
-            );
-
-
-        const nextButton =
-            document.querySelector(
-                ".video-next"
-            );
-
-
-        const caption =
-            document.getElementById(
-                "about-video-caption"
-            );
-
-
-        if (
-            !videoSlider ||
-            !videoPlayer
-        ) {
-
-            return;
-
-        }
-
-
-        const videos =
-            files
-                .filter(file => {
-
-                    if (!isVideo(file.name)) {
-
-                        return false;
-
-                    }
-
-
-                    return normaliseText(
-                        file.name
-                    ).includes(
-                        "video"
-                    );
-
-                })
-                .sort((a, b) =>
-                    a.name.localeCompare(
-                        b.name,
-                        undefined,
-                        {
-                            numeric: true,
-                            sensitivity: "base"
-                        }
-                    )
-                );
-
-
-        if (videos.length === 0) {
-
-            if (emptyMessage) {
-
-                emptyMessage.style.display =
-                    "block";
-
-            }
-
-
-            videoSlider.style.display =
-                "none";
-
-
-            return;
-
-        }
-
-
-        if (emptyMessage) {
-
-            emptyMessage.style.display =
-                "none";
-
-        }
-
-
-        videoSlider.style.display =
-            "block";
-
-
-        let currentIndex = 0;
-
-        let videoSectionVisible = false;
-
-
-        /* =================================================
-           SHOW VIDEO
-        ================================================= */
-
-        function showVideo(
-            index,
-            shouldPlay = false
-        ) {
-
-            currentIndex =
-                (
-                    index +
-                    videos.length
-                ) %
-                videos.length;
-
-
-            const video =
-                videos[currentIndex];
-
-
-            videoPlayer.pause();
-
-
-            videoPlayer.removeAttribute(
-                "src"
-            );
-
-
-            videoPlayer.src =
-                video.download_url;
-
-
-            videoPlayer.load();
-
-
-            videoPlayer.classList.add(
-                "video-ready"
-            );
-
-
-            if (caption) {
-
-                caption.textContent =
-                    getFileNameWithoutExtension(
-                        video.name
-                    );
-
-            }
-
-
-            /*
-             * Play ONLY when the video section
-             * is actually visible.
-             */
-
-            if (
-                shouldPlay &&
-                videoSectionVisible
-            ) {
-
-                const playPromise =
-                    videoPlayer.play();
-
-
-                if (
-                    playPromise &&
-                    typeof playPromise.catch ===
-                        "function"
-                ) {
-
-                    playPromise.catch(() => {
-
-                        /*
-                         * Browser may block
-                         * autoplay when sound
-                         * is enabled.
-                         */
-
-                    });
-
-                }
-
-            }
-
-        }
-
-
-        /* =================================================
-           START VIDEO SLIDING
-        ================================================= */
-
-        function startVideoSlider() {
-
-            if (
-                videos.length <= 1
-            ) {
-
-                /*
-                 * Still play the video if
-                 * the section is visible.
-                 */
-
-                if (
-                    videoSectionVisible
-                ) {
-
-                    const playPromise =
-                        videoPlayer.play();
-
-
-                    if (
-                        playPromise &&
-                        typeof playPromise.catch ===
-                            "function"
-                    ) {
-
-                        playPromise.catch(
-                            () => {}
-                        );
-
-                    }
-
-                }
-
-                return;
-
-            }
-
-
-            if (
-                !videoSectionVisible
-            ) {
-
-                return;
-
-            }
-
-
-            /*
-             * Start playing the current video.
-             * The next video is selected only from
-             * the HTML5 "ended" event below, so each
-             * video is allowed to play for its full duration.
-             */
-
-            const playPromise =
-                videoPlayer.play();
-
-
-            if (
-                playPromise &&
-                typeof playPromise.catch ===
-                    "function"
-            ) {
-
-                playPromise.catch(
-                    () => {}
-                );
-
-            }
-
-        }
-
-
-        /* =================================================
-           STOP VIDEO SLIDING
-        ================================================= */
-
-        function stopVideoSlider() {
-
-            /*
-             * Pause video when section
-             * is no longer visible.
-             */
-
-            videoPlayer.pause();
-
-        }
-
-
-        /* =================================================
-           PREVIOUS BUTTON
-        ================================================= */
-
-        if (previousButton) {
-
-            previousButton.addEventListener(
-                "click",
-                () => {
-
-                    showVideo(
-                        currentIndex - 1,
-                        videoSectionVisible
-                    );
-
-
-                    if (
-                        videoSectionVisible
-                    ) {
-
-                        startVideoSlider();
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        /* =================================================
-           NEXT BUTTON
-        ================================================= */
-
-        if (nextButton) {
-
-            nextButton.addEventListener(
-                "click",
-                () => {
-
-                    showVideo(
-                        currentIndex + 1,
-                        videoSectionVisible
-                    );
-
-
-                    if (
-                        videoSectionVisible
-                    ) {
-
-                        startVideoSlider();
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        /* =================================================
-           WHEN VIDEO FINISHES
-
-           Immediately move to the next video
-           if the viewer is still looking at
-           the video section.
-        ================================================= */
-
-        videoPlayer.addEventListener(
-            "ended",
-            () => {
-
-                if (
-                    videoSectionVisible &&
-                    videos.length > 1
-                ) {
-
-                    showVideo(
-                        currentIndex + 1,
-                        true
-                    );
-
-                }
-
-            }
-        );
-
-
-        /* =================================================
-           INTERSECTION OBSERVER
-
-           Video starts only when the viewer
-           reaches the video section.
-        ================================================= */
-
-        const videoObserver =
-            new IntersectionObserver(
-                entries => {
-
-                    entries.forEach(entry => {
-
-                        if (
-                            entry.isIntersecting
-                        ) {
-
-                            videoSectionVisible =
-                                true;
-
-
-                            startVideoSlider();
-
-
-                        } else {
-
-                            videoSectionVisible =
-                                false;
-
-
-                            stopVideoSlider();
-
-                        }
-
-                    });
-
-                },
-                {
-                    threshold: 0.25
-                }
-            );
-
-
-        videoObserver.observe(
-            videoSlider
-        );
-
-
-        /* =================================================
-           INITIAL VIDEO
-
-           Load video but DO NOT autoplay yet.
-           It will start when visible.
-        ================================================= */
-
-        showVideo(
-            0,
-            false
-        );
-
-    }
-
-
-    /* =====================================================
-       PROJECTS - GITHUB DATA
-
-       Uses ONE GitHub tree request instead of many
-       /contents/ requests. This is much more reliable
-       on GitHub Pages and greatly reduces API rate-limit use.
-
-       Folder structure:
-       /projects/<project-folder>/project.json
-       /projects/<project-folder>/cover.jpg
-    ===================================================== */
-
-    const VISTAARA_PROJECTS = {
-        folder: "projects",
-        cacheKey: "vistaara-project-tree-v2",
-        cacheDuration: 2 * 60 * 1000
-    };
-
-
-    function getRawRepositoryUrl(path) {
-
-        return (
-            "https://raw.githubusercontent.com/" +
-            "vistaarainfraconsultants/vistaara-infra-consultants/" +
-            "main/" +
-            path
-                .split("/")
-                .map(encodeURIComponent)
-                .join("/")
-        );
-
-    }
-
-
-    function getCachedRepositoryTree() {
-
-        try {
-
-            const raw =
-                localStorage.getItem(
-                    VISTAARA_PROJECTS.cacheKey
-                );
-
-            if (!raw) {
-                return null;
-            }
-
-            const cached = JSON.parse(raw);
-
-            if (
-                !cached ||
-                !cached.timestamp ||
-                !Array.isArray(cached.tree)
-            ) {
-                return null;
-            }
-
-            return cached;
-
-        } catch (error) {
-
-            console.warn(
-                "Unable to read repository tree cache:",
-                error
-            );
-
-            return null;
-
-        }
-
-    }
-
-
-    function cacheRepositoryTree(tree) {
-
-        try {
-
-            localStorage.setItem(
-                VISTAARA_PROJECTS.cacheKey,
-                JSON.stringify({
-                    timestamp: Date.now(),
-                    tree
-                })
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "Unable to cache repository tree:",
-                error
-            );
-
-        }
-
-    }
-
-
-    async function getRepositoryTree() {
-
-        const cached =
-            getCachedRepositoryTree();
-
-        const cacheIsFresh =
-            cached &&
-            Date.now() - cached.timestamp <
-                VISTAARA_PROJECTS.cacheDuration;
-
-        if (cacheIsFresh) {
-            return cached.tree;
-        }
-
-        const apiURL =
-            "https://api.github.com/repos/" +
-            "vistaarainfraconsultants/vistaara-infra-consultants" +
-            "/git/trees/main?recursive=1";
-
-        try {
-
-            const response =
-                await fetch(apiURL, {
-                    headers: {
-                        "Accept":
-                            "application/vnd.github+json"
-                    }
-                });
-
-            if (!response.ok) {
-                throw new Error(
-                    `GitHub repository tree error: ${response.status}`
-                );
-            }
-
-            const data =
-                await response.json();
-
-            if (!Array.isArray(data.tree)) {
-                throw new Error(
-                    "GitHub repository tree response is invalid."
-                );
-            }
-
-            if (data.truncated) {
-                console.warn(
-                    "GitHub returned a truncated repository tree. Some files may not be discovered."
-                );
-            }
-
-            const tree =
-                data.tree
-                    .filter(item =>
-                        item &&
-                        item.type === "blob" &&
-                        item.path
-                    )
-                    .map(item => ({
-                        path: item.path,
-                        name: item.path.split("/").pop(),
-                        download_url:
-                            getRawRepositoryUrl(item.path)
-                    }));
-
-            cacheRepositoryTree(tree);
-
-            return tree;
-
-        } catch (error) {
-
-            console.error(
-                "Unable to load repository tree from GitHub:",
-                error
-            );
-
-            if (cached) {
-                console.warn(
-                    "Using the previously cached repository tree."
-                );
-                return cached.tree;
-            }
-
-            return [];
-
-        }
-
-    }
-
-
-    function normalisePath(path) {
-        return path
-            .replace(/^\/+|\/+$/g, "")
-            .toLowerCase();
-    }
-
-
-    function getProjectFolders(tree) {
-
-        const prefix = "projects/";
-        const folders = new Map();
-
-        tree
-            .filter(item =>
-                item.path.toLowerCase().startsWith(prefix)
-            )
-            .forEach(item => {
-
-                const relative =
-                    item.path.slice(prefix.length);
-
-                const parts =
-                    relative.split("/");
-
-                if (parts.length < 2 || !parts[0]) {
-                    return;
-                }
-
-                folders.set(
-                    parts[0].toLowerCase(),
-                    parts[0]
-                );
-
-            });
-
-        return Array.from(folders.values())
-            .sort((a, b) =>
-                a.localeCompare(
-                    b,
-                    undefined,
-                    { numeric: true, sensitivity: "base" }
-                )
-            );
-
-    }
-
-
-    async function fetchRepositoryJson(path) {
-
-        const response =
-            await fetch(
-                getRawRepositoryUrl(path),
-                { cache: "no-store" }
-            );
-
-        if (!response.ok) {
-            throw new Error(
-                `Unable to read ${path}: ${response.status}`
-            );
-        }
-
-        return response.json();
-
-    }
-
-
-    function validateProjectData(project, folderName) {
-
-        const requiredFields = [
-            "title",
-            "category",
-            "description",
-            "image"
-        ];
-
-        const missing =
-            requiredFields.filter(field =>
-                typeof project?.[field] !== "string" ||
-                !project[field].trim()
-            );
-
-        if (missing.length) {
-            console.warn(
-                `Skipping project "${folderName}": missing ${missing.join(", ")}.`
-            );
-            return false;
-        }
-
-        return true;
-
-    }
-
-
-    async function fetchProjectDataFromTree(
-        tree,
-        folderName
-    ) {
-
-        try {
-
-            const prefix =
-                `projects/${folderName}/`;
-
-            const files =
-                tree.filter(item =>
-                    item.path.toLowerCase().startsWith(
-                        prefix.toLowerCase()
-                    )
-                );
-
-            const jsonFile =
-                files.find(file =>
-                    file.name.toLowerCase() === "project.json"
-                );
-
-            if (!jsonFile) {
-                throw new Error("project.json not found.");
-            }
-
-            const project =
-                await fetchRepositoryJson(
-                    jsonFile.path
-                );
-
-            if (!validateProjectData(project, folderName)) {
-                return null;
-            }
-
-            const requestedImage =
-                project.image.trim().toLowerCase();
-
-            const imageFile =
-                files.find(file =>
-                    file.name.toLowerCase() === requestedImage
-                );
-
-            if (!imageFile) {
-                throw new Error(
-                    `Image "${project.image}" not found in the project folder.`
-                );
-            }
-
-            return {
-                ...project,
-                location: project.location || "",
-                status: project.status || "",
-                featured: project.featured === true,
-                order:
-                    Number.isFinite(Number(project.order))
-                        ? Number(project.order)
-                        : Number.MAX_SAFE_INTEGER,
-                imageUrl: imageFile.download_url,
-                folder: folderName
-            };
-
-        } catch (error) {
-
-            console.warn(
-                `Skipping project folder "${folderName}":`,
-                error.message
-            );
-
-            return null;
-
-        }
-
-    }
-
-
-    function createProjectCard(project) {
-
-        const article =
-            document.createElement("article");
-
-        article.className = "project-card";
-        article.dataset.projectFolder = project.folder;
-        article.dataset.category = project.category;
-        article.dataset.status = project.status;
-
-        const imageWrap =
-            document.createElement("div");
-        imageWrap.className = "project-image";
-
-        const image =
-            document.createElement("img");
-        image.src = project.imageUrl;
-        image.alt = project.title;
-        image.loading = "lazy";
-        image.decoding = "async";
-
-        image.addEventListener("error", () => {
-            console.warn(
-                `Unable to load project image for "${project.title}".`
-            );
-            article.remove();
-        });
-
-        imageWrap.appendChild(image);
-
-        const content =
-            document.createElement("div");
-        content.className = "project-content";
-
-        const category =
-            document.createElement("span");
-        category.textContent = project.category;
-
-        const title =
-            document.createElement("h3");
-        title.textContent = project.title;
-
-        const description =
-            document.createElement("p");
-        description.textContent = project.description;
-
-        content.appendChild(category);
-        content.appendChild(title);
-        content.appendChild(description);
-
-        if (project.location) {
-            const location =
-                document.createElement("small");
-            location.textContent = project.location;
-            content.appendChild(location);
-        }
-
-        article.appendChild(imageWrap);
-        article.appendChild(content);
-
-        return article;
-
-    }
-
-
-    function createMoreProjectItem(project) {
-
-        const item =
-            document.createElement("div");
-
-        item.className = "more-project-item";
-        item.dataset.projectFolder = project.folder;
-
-        const code =
-            document.createElement("span");
-        code.textContent = project.category || "PROJECT";
-
-        const name =
-            document.createElement("h4");
-        name.className = "more-project-name";
-        name.textContent = project.title;
-
-        item.appendChild(code);
-        item.appendChild(name);
-
-        if (project.location) {
-            const location =
-                document.createElement("small");
-            location.textContent = project.location;
-            item.appendChild(location);
-        }
-
-        return item;
-
-    }
-
-
-    function renderProjects(projects) {
-
-        const featuredGrid =
-            document.getElementById("featured-project-grid");
-
-        const moreList =
-            document.getElementById("more-projects-list");
-
-        const moreProjects =
-            document.getElementById("more-projects");
-
-        const emptyMessage =
-            document.getElementById("projects-empty");
-
-        if (!featuredGrid || !moreList) {
-            return;
-        }
-
-        featuredGrid.innerHTML = "";
-        moreList.innerHTML = "";
-
-        const featured =
-            projects
-                .filter(project => project.featured)
-                .sort((a, b) => a.order - b.order);
-
-        const featuredProjects =
-            featured.slice(0, 5);
-
-        const extraFeatured =
-            featured.slice(5);
-
-        if (extraFeatured.length) {
-            console.warn(
-                `${extraFeatured.length} project(s) are marked featured beyond the five-card featured area. They will appear in More Projects.`
-            );
-        }
-
-        const remainingProjects =
-            projects
-                .filter(project => !project.featured)
-                .concat(extraFeatured)
-                .sort((a, b) => a.order - b.order);
-
-        featuredProjects.forEach(project => {
-            featuredGrid.appendChild(
-                createProjectCard(project)
-            );
-        });
-
-        remainingProjects.forEach(project => {
-            moreList.appendChild(
-                createMoreProjectItem(project)
-            );
-        });
-
-        if (emptyMessage) {
-            emptyMessage.style.display =
-                projects.length ? "none" : "block";
-        }
-
-        if (moreProjects) {
-            moreProjects.style.display =
-                remainingProjects.length ? "block" : "none";
-        }
-
-    }
-
-
-    function initialiseProjectsToggle() {
-
-        const list =
-            document.getElementById("more-projects-list");
-
-        const toggle =
-            document.getElementById("more-projects-toggle");
-
-        if (!list || !toggle) {
-            return;
-        }
-
-        toggle.addEventListener("click", () => {
-
-            const isOpen =
-                toggle.getAttribute("aria-expanded") === "true";
-
-            toggle.setAttribute(
-                "aria-expanded",
-                String(!isOpen)
-            );
-
-            list.hidden = isOpen;
-
-        });
-
-    }
-
-
-    async function initialiseProjects(treeOverride = null) {
-
-        initialiseProjectsToggle();
-
-        const tree =
-            treeOverride || await getRepositoryTree();
-
-        if (!tree.length) {
-            renderProjects([]);
-            return;
-        }
-
-        const folders =
-            getProjectFolders(tree);
-
-        const results =
-            await Promise.allSettled(
-                folders.map(folderName =>
-                    fetchProjectDataFromTree(
-                        tree,
-                        folderName
-                    )
-                )
-            );
-
-        const projects =
-            results
-                .filter(result =>
-                    result.status === "fulfilled" &&
-                    result.value
-                )
-                .map(result => result.value)
-                .sort((a, b) => {
-                    if (a.order !== b.order) {
-                        return a.order - b.order;
-                    }
-
-                    return a.folder.localeCompare(
-                        b.folder,
-                        undefined,
-                        {
-                            numeric: true,
-                            sensitivity: "base"
-                        }
-                    );
-                });
-
-        renderProjects(projects);
-
-    }
-
-
-    /* =====================================================
-       EMPLOYEE CAROUSEL
-    ===================================================== */
-
-    function parseEmployeeFile(file) {
-
-        const filename =
-            getFileNameWithoutExtension(
-                file.name
-            );
-
-
-        const match =
-            filename.match(
-                /^Employee[_\s-]*(\d+)[_\-\s]+(.+)$/i
-            );
-
-
-        if (!match) {
-
-            return null;
-
-        }
-
-
-        const number =
-            parseInt(
-                match[1],
-                10
-            );
-
-
-        const remainder =
-            match[2].trim();
-
-
-        const parts =
-            remainder
-                .split("_")
-                .map(part => part.trim())
-                .filter(Boolean);
-
-
-        if (!parts.length) {
-
-            return null;
-
-        }
-
-
-        const name =
-            parts.shift();
-
-
-        const designation =
-            parts.join(" ") ||
-            "Team Member";
-
-
-        return {
-            number,
-            name,
-            designation,
-            file
-        };
-
-    }
-
-
-    async function initialiseEmployeeCarousel(files) {
-
-        const carousel =
-            document.getElementById(
-                "employee-carousel"
-            );
-
-
-        const emptyMessage =
-            document.getElementById(
-                "employee-empty"
-            );
-
-
-        const previousButton =
-            document.querySelector(
-                ".employee-prev"
-            );
-
-
-        const nextButton =
-            document.querySelector(
-                ".employee-next"
-            );
-
-
-        if (!carousel) {
-
-            return;
-
-        }
-
-
-        const employees =
-            files
-                .filter(file =>
-                    isImage(file.name)
-                )
-                .map(parseEmployeeFile)
-                .filter(Boolean)
-                .sort(
-                    (a, b) =>
-                        a.number - b.number
-                );
-
-
-        if (!employees.length) {
-
-            if (emptyMessage) {
-
-                emptyMessage.style.display =
-                    "block";
-
-            }
-
-            return;
-
-        }
-
-
-        if (emptyMessage) {
-
-            emptyMessage.style.display =
-                "none";
-
-        }
-
-
-        let currentStart = 0;
-
-
-        function getVisibleCount() {
-
-            const width =
-                window.innerWidth;
-
-
-            if (width <= 600) {
-
-                return 1;
-
-            }
-
-
-            if (width <= 950) {
-
-                return 2;
-
-            }
-
-
-            return 4;
-
-        }
-
-
-        function renderEmployees() {
-
-            carousel.innerHTML = "";
-
-
-            const visibleCount =
-                Math.min(
-                    getVisibleCount(),
-                    employees.length
-                );
-
-
-            for (
-                let i = 0;
-                i < visibleCount;
-                i++
-            ) {
-
-                const employee =
-                    employees[
-                        (
-                            currentStart +
-                            i
-                        ) %
-                        employees.length
-                    ];
-
-
-                const card =
-                    document.createElement(
-                        "article"
-                    );
-
-
-                card.className =
-                    "employee-card";
-
-
-                const imageWrapper =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                imageWrapper.className =
-                    "employee-photo";
-
-
-                const image =
-                    document.createElement(
-                        "img"
-                    );
-
-
-                image.src =
-                    employee.file.download_url;
-
-
-                image.alt =
-                    `${employee.name} - ${employee.designation}`;
-
-
-                image.loading =
-                    "lazy";
-
-
-                imageWrapper.appendChild(
-                    image
-                );
-
-
-                const info =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                info.className =
-                    "employee-info";
-
-
-                const number =
-                    document.createElement(
-                        "span"
-                    );
-
-
-                number.className =
-                    "employee-number";
-
-
-                number.textContent =
-                    String(
-                        employee.number
-                    ).padStart(
-                        2,
-                        "0"
-                    );
-
-
-                const name =
-                    document.createElement(
-                        "h4"
-                    );
-
-
-                name.textContent =
-                    employee.name;
-
-
-                const designation =
-                    document.createElement(
-                        "p"
-                    );
-
-
-                designation.textContent =
-                    employee.designation;
-
-
-                info.appendChild(number);
-
-                info.appendChild(name);
-
-                info.appendChild(
-                    designation
-                );
-
-
-                card.appendChild(
-                    imageWrapper
-                );
-
-
-                card.appendChild(info);
-
-
-                carousel.appendChild(card);
-
-            }
-
-        }
-
-
-        function moveEmployee(direction) {
-
-            if (
-                employees.length <= 1
-            ) {
-
-                return;
-
-            }
-
-
-            currentStart =
-                (
-                    currentStart +
-                    direction +
-                    employees.length
-                ) %
-                employees.length;
-
-
-            renderEmployees();
-
-        }
-
-
-        if (previousButton) {
-
-            previousButton.addEventListener(
-                "click",
-                () => {
-
-                    moveEmployee(-1);
-
-                }
-            );
-
-        }
-
-
-        if (nextButton) {
-
-            nextButton.addEventListener(
-                "click",
-                () => {
-
-                    moveEmployee(1);
-
-                }
-            );
-
-        }
-
-
-        let resizeTimer = null;
-
-
-        window.addEventListener(
-            "resize",
-            () => {
-
-                clearTimeout(
-                    resizeTimer
-                );
-
-
-                resizeTimer =
-                    setTimeout(
-                        () => {
-
-                            renderEmployees();
-
-                        },
-                        150
-                    );
-
-            }
-        );
-
-
-        renderEmployees();
-
-
-        /*
-         * Advance only while the employee photos are on screen.
-         * currentStart is initialized to zero above, so the carousel
-         * always opens with the first employee when visitors reach it.
-         */
-        let employeeAutoplay = null;
-        let employeeSectionVisible = false;
-
-        function stopEmployeeAutoplay() {
-            if (employeeAutoplay !== null) {
-                clearInterval(employeeAutoplay);
-                employeeAutoplay = null;
-            }
-        }
-
-        function updateEmployeeAutoplay() {
-            const shouldPlay =
-                employeeSectionVisible &&
-                document.visibilityState === "visible" &&
-                employees.length > 4;
-
-            if (shouldPlay && employeeAutoplay === null) {
-                employeeAutoplay = setInterval(
-                    () => moveEmployee(1),
-                    3000
-                );
-            } else if (!shouldPlay) {
-                stopEmployeeAutoplay();
-            }
-        }
-
-        const employeeSection =
-            carousel.closest(".employee-section");
-
-        if (employeeSection && "IntersectionObserver" in window) {
-            const employeeObserver = new IntersectionObserver(
-                (entries) => {
-                    employeeSectionVisible = entries.some(
-                        (entry) => entry.isIntersecting && entry.intersectionRatio >= 0.25
-                    );
-                    updateEmployeeAutoplay();
-                },
-                { threshold: [0, 0.25] }
-            );
-            employeeObserver.observe(employeeSection);
-        }
-
-        document.addEventListener(
-            "visibilitychange",
-            updateEmployeeAutoplay
-        );
-
-    }
-
-
-
-    /* =====================================================
-       CAREERS - GITHUB DATA
-
-       Folder structure:
-       /careers/<position-folder>/job.json
-    ===================================================== */
-
-    const VISTAARA_CAREERS = {
-        folder: "careers"
-    };
-
-
-    function getCareerFolders(tree) {
-
-        const prefix = "careers/";
-        const folders = new Map();
-
-        tree
-            .filter(item =>
-                item.path.toLowerCase().startsWith(prefix)
-            )
-            .forEach(item => {
-
-                const relative =
-                    item.path.slice(prefix.length);
-
-                const parts =
-                    relative.split("/");
-
-                if (parts.length < 2 || !parts[0]) {
-                    return;
-                }
-
-                folders.set(
-                    parts[0].toLowerCase(),
-                    parts[0]
-                );
-
-            });
-
-        return Array.from(folders.values())
-            .sort((a, b) =>
-                a.localeCompare(
-                    b,
-                    undefined,
-                    {
-                        numeric: true,
-                        sensitivity: "base"
-                    }
-                )
-            );
-
-    }
-
-
-    function validateCareerData(job, folderName) {
-
-        const requiredFields = [
-            "title",
-            "count",
-            "status",
-            "details",
-            "software",
-            "qualification",
-            "description",
-            "email"
-        ];
-
-        const missing =
-            requiredFields.filter(field => {
-
-                if (field === "details") {
-                    return !Array.isArray(job?.details) ||
-                        !job.details.length;
-                }
-
-                return (
-                    typeof job?.[field] !== "string" ||
-                    !job[field].trim()
-                );
-
-            });
-
-        if (missing.length) {
-            console.warn(
-                `Skipping career position "${folderName}": missing or invalid ${missing.join(", ")}.`
-            );
-            return false;
-        }
-
-        if (
-            !["open", "closed"].includes(
-                job.status.toLowerCase()
-            )
-        ) {
-            console.warn(
-                `Skipping career position "${folderName}": status must be "open" or "closed".`
-            );
-            return false;
-        }
-
-        return true;
-
-    }
-
-
-    async function fetchCareerDataFromTree(
-        tree,
-        folderName
-    ) {
-
-        try {
-
-            const prefix =
-                `careers/${folderName}/`;
-
-            const files =
-                tree.filter(item =>
-                    item.path.toLowerCase().startsWith(
-                        prefix.toLowerCase()
-                    )
-                );
-
-            const jsonFile =
-                files.find(file =>
-                    file.name.toLowerCase() === "job.json"
-                );
-
-            if (!jsonFile) {
-                throw new Error("job.json not found.");
-            }
-
-            const job =
-                await fetchRepositoryJson(
-                    jsonFile.path
-                );
-
-            if (!validateCareerData(job, folderName)) {
-                return null;
-            }
-
-            return {
-                ...job,
-                status: job.status.toLowerCase(),
-                order:
-                    Number.isFinite(Number(job.order))
-                        ? Number(job.order)
-                        : Number.MAX_SAFE_INTEGER,
-                folder: folderName
-            };
-
-        } catch (error) {
-
-            console.warn(
-                `Skipping career folder "${folderName}":`,
-                error.message
-            );
-
-            return null;
-
-        }
-
-    }
-
-
-    function createJobCard(job, positionNumber) {
-
-        const article =
-            document.createElement("article");
-
-        article.className = "job-card";
-        article.dataset.positionFolder = job.folder;
-        article.dataset.status = job.status;
-
-        const header =
-            document.createElement("div");
-        header.className = "job-header";
-
-        const titleWrap =
-            document.createElement("div");
-
-        const number =
-            document.createElement("span");
-        number.className = "job-number";
-        number.textContent =
-            job.positionLabel ||
-            `POSITION ${String(positionNumber).padStart(2, "0")}`;
-
-        const title =
-            document.createElement("h3");
-        title.textContent = job.title;
-
-        const count =
-            document.createElement("p");
-        count.className = "job-count";
-        count.textContent = job.count;
-
-        titleWrap.appendChild(number);
-        titleWrap.appendChild(title);
-        titleWrap.appendChild(count);
-
-        const status =
-            document.createElement("span");
-        status.className = `job-status ${job.status}`;
-        status.textContent = job.status.toUpperCase();
-
-        header.appendChild(titleWrap);
-        header.appendChild(status);
-
-        const toggle =
-            document.createElement("button");
-        toggle.className = "job-details-toggle";
-        toggle.type = "button";
-        toggle.setAttribute("aria-expanded", "false");
-
-        const toggleText =
-            document.createElement("span");
-        toggleText.textContent = "View Position Details";
-
-        const arrow =
-            document.createElement("span");
-        arrow.className = "job-arrow";
-        arrow.textContent = "+";
-        arrow.setAttribute("aria-hidden", "true");
-
-        toggle.appendChild(toggleText);
-        toggle.appendChild(arrow);
-
-        const details =
-            document.createElement("div");
-        details.className = "job-details";
-
-        const intro =
-            document.createElement("h4");
-        intro.textContent =
-            "We are looking for candidates with experience or interest in:";
-        details.appendChild(intro);
-
-        const list =
-            document.createElement("ul");
-
-        job.details.forEach(detail => {
-            const li =
-                document.createElement("li");
-            li.textContent = detail;
-            list.appendChild(li);
-        });
-
-        details.appendChild(list);
-
-        const softwareHeading =
-            document.createElement("h4");
-        softwareHeading.textContent =
-            "Preferred Software Skills";
-        details.appendChild(softwareHeading);
-
-        const software =
-            document.createElement("p");
-        software.textContent = job.software;
-        details.appendChild(software);
-
-        const qualificationHeading =
-            document.createElement("h4");
-        qualificationHeading.textContent = "Qualification";
-        details.appendChild(qualificationHeading);
-
-        const qualification =
-            document.createElement("p");
-        qualification.textContent = job.qualification;
-        details.appendChild(qualification);
-
-        const description =
-            document.createElement("p");
-        description.textContent = job.description;
-        details.appendChild(description);
-
-        if (job.location) {
-            const location =
-                document.createElement("p");
-            const strong =
-                document.createElement("strong");
-            strong.textContent = "Location: ";
-            location.appendChild(strong);
-            location.appendChild(
-                document.createTextNode(job.location)
-            );
-            details.appendChild(location);
-        }
-
-        const apply =
-            document.createElement("div");
-        apply.className = "job-apply";
-
-        const applyLink =
-            document.createElement("a");
-        applyLink.className = "button button-orange";
-        applyLink.href =
-            `mailto:${job.email}?subject=` +
-            encodeURIComponent(
-                `Application - ${job.title}`
-            );
-        applyLink.textContent =
-            "Apply for this Position";
-
-        apply.appendChild(applyLink);
-        details.appendChild(apply);
-
-        toggle.addEventListener("click", () => {
-
-            if (job.status === "closed") {
-                return;
-            }
-
-            const isOpen =
-                article.classList.toggle(
-                    "details-open"
-                );
-
-            toggle.setAttribute(
-                "aria-expanded",
-                String(isOpen)
-            );
-
-            arrow.textContent =
-                isOpen ? "−" : "+";
-
-        });
-
-        article.appendChild(header);
-        article.appendChild(toggle);
-        article.appendChild(details);
-
-        return article;
-
-    }
-
-
-    function renderCareers(jobs) {
-
-        const careersList =
-            document.getElementById("careers-list");
-
-        const emptyMessage =
-            document.getElementById("career-empty");
-
-        if (!careersList) {
-            return;
-        }
-
-        careersList.innerHTML = "";
-
-        jobs.forEach((job, index) => {
-            careersList.appendChild(
-                createJobCard(job, index + 1)
-            );
-        });
-
-        if (emptyMessage) {
-            emptyMessage.style.display =
-                jobs.length ? "none" : "block";
-        }
-
-    }
-
-
-    async function initialiseCareers(treeOverride = null) {
-
-        const tree =
-            treeOverride || await getRepositoryTree();
-
-        if (!tree.length) {
-            renderCareers([]);
-            return;
-        }
-
-        const folders =
-            getCareerFolders(tree);
-
-        const results =
-            await Promise.allSettled(
-                folders.map(folderName =>
-                    fetchCareerDataFromTree(
-                        tree,
-                        folderName
-                    )
-                )
-            );
-
-        const jobs =
-            results
-                .filter(result =>
-                    result.status === "fulfilled" &&
-                    result.value
-                )
-                .map(result => result.value)
-                .sort((a, b) => {
-                    if (a.order !== b.order) {
-                        return a.order - b.order;
-                    }
-
-                    return a.folder.localeCompare(
-                        b.folder,
-                        undefined,
-                        {
-                            numeric: true,
-                            sensitivity: "base"
-                        }
-                    );
-                });
-
-        renderCareers(jobs);
-
-    }
-
-
-    /* =====================================================
-       GALLERY
-       
-       Automatically detects:
-       Gallery 01.jpg
-       Gallery 02.png
-       Gallery 03.webp
-       etc.
-    ===================================================== */
-
-    async function initialiseGallery(files) {
-
-        const galleryGrid =
-            document.getElementById(
-                "gallery-grid"
-            );
-
-        const galleryEmpty = 
-            document.getElementById( 
-                "gallery-empty" 
-        );
-
-        const previousButton =
-            document.querySelector(
-                ".gallery-prev"
-            );
-
-
-        const nextButton =
-            document.querySelector(
-                ".gallery-next"
-            );
-
-
-        if (!galleryGrid) {
-
-            return;
-
-        }
-
-
-        const galleryFiles =
-            files
-                .filter(file => {
-
-                    if (!isImage(file.name)) {
-
-                        return false;
-
-                    }
-
-
-                    return normaliseText(
-                        file.name
-                    ).startsWith(
-                        "gallery"
-                    );
-
-                })
-                .sort(
-                    (a, b) =>
-                        a.name.localeCompare(
-                            b.name,
-                            undefined,
-                            {
-                                numeric: true,
-                                sensitivity: "base"
-                            }
-                        )
-                );
-
-
-
-    /* =================================================
-       NO GALLERY IMAGES
-    ================================================= */
-
-    if (!galleryFiles.length) {
-
-        galleryGrid.innerHTML =
-            "";
-
-
-        if (galleryEmpty) {
-
-            galleryEmpty.style.display =
-                "block";
-
-        }
-
-
-        return;
-
-    }
-
-
-    /* =================================================
-       GALLERY IMAGES FOUND
-
-       Hide the "Gallery images will appear here"
-       message.
-    ================================================= */
-
-    if (galleryEmpty) {
-
-        galleryEmpty.style.display =
-            "none";
-
-    }
-
-
-        let currentStart = 0;
-
-        const visibleCount = 6;
-
-
-        function renderGallery() {
-
-            galleryGrid.innerHTML =
-                "";
-
-
-            const count =
-                Math.min(
-                    visibleCount,
-                    galleryFiles.length
-                );
-
-
-            for (
-                let i = 0;
-                i < count;
-                i++
-            ) {
-
-                const file =
-                    galleryFiles[
-                        (
-                            currentStart +
-                            i
-                        ) %
-                        galleryFiles.length
-                    ];
-
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                item.className =
-                    "gallery-item";
-
-
-                const image =
-                    document.createElement(
-                        "img"
-                    );
-
-
-                image.src =
-                    file.download_url;
-
-
-                image.alt =
-                    getFileNameWithoutExtension(
-                        file.name
-                    );
-
-
-                image.loading =
-                    i < 2
-                        ? "eager"
-                        : "lazy";
-
-
-                item.appendChild(
-                    image
-                );
-
-
-                galleryGrid.appendChild(
-                    item
-                );
-
-            }
-
-        }
-
-
-        function moveGallery(direction) {
-
-            if (
-                galleryFiles.length <=
-                visibleCount
-            ) {
-
-                return;
-
-            }
-
-
-            currentStart =
-                (
-                    currentStart +
-                    direction +
-                    galleryFiles.length
-                ) %
-                galleryFiles.length;
-
-
-            renderGallery();
-
-        }
-
-
-        if (previousButton) {
-
-            previousButton.addEventListener(
-                "click",
-                () => {
-
-                    moveGallery(-1);
-
-                }
-            );
-
-        }
-
-
-        if (nextButton) {
-
-            nextButton.addEventListener(
-                "click",
-                () => {
-
-                    moveGallery(1);
-
-                }
-            );
-
-        }
-
-
-        renderGallery();
-
-
-        if (
-            galleryFiles.length >
-            visibleCount
-        ) {
-
-            setInterval(
-                () => {
-
-                    moveGallery(1);
-
-                },
-                4000
-            );
-
-        }
-
-    }
-
-
-    /* =====================================================
-       INITIALISE ALL DYNAMIC MEDIA
-    ===================================================== */
-
-    async function initialiseDynamicContent(treeOverride = null) {
-
-        const files =
-            await getRepositoryMedia(treeOverride);
-
-
-        if (!files.length) {
-
-            console.warn(
-                "No repository media found."
-            );
-
-            return;
-
-        }
-
-
-        await initialiseAboutPhotos(
-            files
-        );
-
-
-        await initialiseAboutVideos(
-            files
-        );
-
-
-        await initialiseEmployeeCarousel(
-            files
-        );
-
-
-        await initialiseGallery(
-            files
-        );
-
-    }
-
-
-    /* =====================================================
-       INITIALISE ALL DYNAMIC COMPONENTS
-
-       One repository-tree request is shared by Projects, Careers,
-       About media, Gallery and Employee media.
-    ===================================================== */
-
-    async function initialiseWebsiteData() {
-
-        const tree =
-            await getRepositoryTree();
-
-        await Promise.all([
-            initialiseProjects(tree),
-            initialiseCareers(tree),
-            initialiseDynamicContent(tree)
-        ]);
-
-    }
-
-
-    initialiseWebsiteData();
-
-
-    /* =====================================================
-       PAGE VISIBILITY
-
-       If the browser tab itself is hidden,
-       stop video playback.
-    ===================================================== */
-
-    document.addEventListener(
-        "visibilitychange",
-        () => {
-
-            const video =
-                document.getElementById(
-                    "about-video-player"
-                );
-
-
-            if (!video) {
-
-                return;
-
-            }
-
-
-            if (document.hidden) {
-
-                video.pause();
-
-            }
-
-        }
-    );
-
-});
-/* Project enquiry: prepare an email for the visitor to review and send. */
-document.addEventListener("DOMContentLoaded", function () {
-    const form = document.getElementById("contact-form");
-    if (!form) return;
-    form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        if (!form.reportValidity()) return;
-        const data = new FormData(form);
-        const value = (key) => String(data.get(key) || "").trim();
-        const body = [
-            `Name: ${value("name")}`,
-            `Work email: ${value("email")}`,
-            `Organization: ${value("organization") || "Not provided"}`,
-            `Phone: ${value("phone") || "Not provided"}`,
-            "",
-            "How can we help?",
-            value("message")
-        ].join("\n");
-        const subject = "Project Enquiry – Vistaara Infra Consultants";
-        window.location.href = `mailto:info@vistaarainfra.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+(() => {
+'use strict';
+
+/* ---------- configuration ---------- */
+const GITHUB = {owner:'vistaarainfraconsultants', repo:'vistaara-infra-consultants', branch:'main'};
+const TREE_CACHE = {key:'vistaara-repo-tree-v3', ms:2*60*1000};
+const IMAGE_EXT = ['jpg','jpeg','png','webp','gif','avif'];
+const VIDEO_EXT = ['mp4','webm','ogg','m4v','mov'];
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const byName = (a,b) => a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'});
+const extOf = n => (n.split('.').pop()||'').toLowerCase();
+const isImage = n => IMAGE_EXT.includes(extOf(n));
+const isVideo = n => VIDEO_EXT.includes(extOf(n));
+const norm = n => n.toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+const stripExt = n => n.replace(/\.[^/.]+$/,'');
+const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// DOM helper — text always goes in as text, never as HTML
+function el(tag,attrs={},...kids){
+  const e=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)) k==='class'?e.className=v:e.setAttribute(k,v);
+  kids.flat().forEach(c=>{if(c!==null&&c!==undefined&&c!=='')e.append(c instanceof Node?c:document.createTextNode(c))});
+  return e;
+}
+
+/* ---------- scroll reveals ---------- */
+const io = new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+const watchReveals = root => root.querySelectorAll('.reveal:not(.in)').forEach((x,i)=>{x.style.transitionDelay=(i%3)*90+'ms';io.observe(x)});
+watchReveals(document);
+
+/* ---------- counters ---------- */
+function countUp(b){
+  const n=+b.dataset.count,suf=b.dataset.suf||'';
+  if(reduceMotion){b.textContent=n+suf;return}
+  let t0;const f=t=>{t0??=t;const p=Math.min((t-t0)/1400,1);b.textContent=Math.round(n*(1-Math.pow(1-p,4)))+suf;if(p<1)requestAnimationFrame(f)};
+  requestAnimationFrame(f);
+}
+const co = new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.dataset.done='1';countUp(e.target);co.unobserve(e.target)}}),{threshold:.6});
+document.querySelectorAll('[data-count]').forEach(b=>co.observe(b));
+function setStat(id,n){const b=$(id);if(!b||!n)return;b.dataset.count=n;if(b.dataset.done)b.textContent=n+(b.dataset.suf||'')}
+
+/* ---------- navigation: theme follows the section underneath, active link, mobile menu ---------- */
+const nav=$('nav'), toggle=$('menu-toggle');
+function navTheme(){
+  const y=nav.getBoundingClientRect().bottom-10;
+  const under=[...document.querySelectorAll('header.hero,.band,section,.cta,footer')].filter(s=>{const r=s.getBoundingClientRect();return r.top<=y&&r.bottom>y});
+  const s=under[under.length-1]; // innermost wins, so the orange contact card counts as dark
+  if(s){const light=s.classList.contains('light');nav.classList.toggle('light',light);nav.classList.toggle('dark',!light)}
+  const links=[...nav.querySelectorAll('.nav-links a:not(.m-only)')];let cur=links[0];
+  links.slice(1).forEach(a=>{const t=document.querySelector(a.getAttribute('href'));if(t&&t.getBoundingClientRect().top<innerHeight*.4)cur=a});
+  links.forEach(a=>a.classList.toggle('on',a===cur));
+}
+addEventListener('scroll',navTheme,{passive:true});addEventListener('resize',navTheme);navTheme();
+const setMenu=open=>{nav.classList.toggle('open',open);toggle.setAttribute('aria-expanded',open);toggle.setAttribute('aria-label',open?'Close menu':'Open menu')};
+toggle.addEventListener('click',()=>setMenu(!nav.classList.contains('open')));
+nav.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>setMenu(false)));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
+document.addEventListener('click',e=>{if(!nav.contains(e.target))setMenu(false)});
+
+/* =========================================================
+   HERO TITLE — VISTAARA built on site
+   road roller paves → blueprint outlines → tower crane lowers each 3D letter
+   → INFRA CONSULTANTS types out → golden light runs round the letter edges
+========================================================= */
+(()=>{
+  const T='VISTAARA', host=$('brand-build'), hero=host.closest('.hero'), measure=hero.querySelector('.brand-big');
+  const NS='http://www.w3.org/2000/svg';
+  const sv=(tag,attrs={},parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent&&parent.append(e);return e};
+  const GOLD='#f0b429',STEEL='#2b2d33',LIGHT='#c9ccd2';
+  const SIDES=['#c44703','#b84303','#ab3f02','#9e3a02','#913502','#843002','#772b02'];
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  let G, built=false;
+
+  function geometry(){
+    const cs=getComputedStyle(measure), fs=parseFloat(cs.fontSize), u=fs/100;
+    const font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const c=document.createElement('canvas').getContext('2d');c.font=font;c.letterSpacing=cs.letterSpacing;
+    const m=c.measureText(T), asc=m.actualBoundingBoxAscent, pad=2*u;
+    const xs=[...T].map((_,i)=>pad+c.measureText(T.slice(0,i)).width), ws=[...T].map(ch=>c.measureText(ch).width);
+    const B=pad+asc, depth=Math.max(4,Math.round(fs*.045)), roadTop=B+depth+3*u, roadH=7*u;
+    return {fs,u,font,asc,xs,ws,B,depth,roadTop,roadH,W:m.width+pad*2,H:roadTop+roadH+2*u,capTop:B-asc,jibY:B-asc-34*u};
+  }
+
+  function draw(){
+    const g=G=geometry(), {u,W,H,B,depth,roadTop,roadH,xs,ws,jibY,capTop}=g;
+    host.replaceChildren();
+    const svg=sv('svg',{class:'brand-svg',width:W,height:H,viewBox:`0 0 ${W} ${H}`},host);
+    const defs=sv('defs',{},svg);
+    const grad=sv('linearGradient',{id:'goldLine',gradientUnits:'userSpaceOnUse',x1:0,y1:0,x2:W,y2:0},defs);
+    [['0','#ffd36b'],['.5','#ffffff'],['1','#ffc23d']].forEach(([o,c])=>sv('stop',{offset:o,'stop-color':c},grad));
+    const f=sv('filter',{id:'goldGlow',x:'-20%',y:'-20%',width:'140%',height:'140%'},defs);sv('feGaussianBlur',{stdDeviation:1.6*u},f);
+    const txt=(ch,x,y,attrs,parent)=>{const t=sv('text',{x,y,...attrs},parent);t.style.font=g.font;t.textContent=ch;return t};
+
+    // road with lane markings (stays as the base of the name)
+    const road=sv('g',{},svg);
+    sv('rect',{x:0,y:roadTop,width:W,height:roadH,rx:roadH/2,fill:'#26272c'},road);
+    sv('line',{x1:roadH/2,y1:roadTop+.6*u,x2:W-roadH/2,y2:roadTop+.6*u,stroke:'#4a4c53','stroke-width':.8*u},road);
+    g.lane=sv('line',{x1:2*u,y1:roadTop+roadH/2,x2:W-2*u,y2:roadTop+roadH/2,stroke:'#e9e5dc','stroke-width':.9*u,'stroke-dasharray':`${5*u} ${4*u}`},road);
+    g.road=road;
+
+    // blueprint outlines (where each letter will land)
+    g.wire=xs.map((x,i)=>txt(T[i],x,B,{fill:'none',stroke:GOLD,'stroke-opacity':.55,'stroke-width':Math.max(1,.7*u),'stroke-dasharray':`${1.6*u} ${1.2*u}`},svg));
+
+    // 3D letters: stacked darker copies for the sides, orange face on top
+    g.letters=xs.map((x,i)=>{
+      const lg=sv('g',{},svg);
+      for(let d=depth;d>=1;d--)txt(T[i],x,B+d,{fill:SIDES[Math.min(6,Math.floor((d-1)*7/depth))]},lg);
+      txt(T[i],x,B,{fill:'#d94f04'},lg);
+      const cx=x+ws[i]/2, rig=sv('g',{},lg); // spreader bar + slings the crane hook holds
+      sv('line',{x1:cx,y1:capTop-6*u,x2:cx-ws[i]*.32,y2:capTop,stroke:LIGHT,'stroke-width':.5*u},rig);
+      sv('line',{x1:cx,y1:capTop-6*u,x2:cx+ws[i]*.32,y2:capTop,stroke:LIGHT,'stroke-width':.5*u},rig);
+      sv('rect',{x:cx-1.6*u,y:capTop-7.6*u,width:3.2*u,height:2*u,rx:.6*u,fill:GOLD},rig);
+      lg.rig=rig;lg.cx=cx;return lg;
     });
+
+    // golden light that runs round every letter edge
+    g.flow=sv('g',{opacity:0},svg);
+    xs.forEach((x,i)=>{
+      const dash=`${16*u} ${74*u}`;
+      const glow=txt(T[i],x,B,{fill:'none',stroke:'#ffcf5a','stroke-width':3*u,'stroke-opacity':.55,'stroke-dasharray':dash,'stroke-linejoin':'round',filter:'url(#goldGlow)'},g.flow);
+      const core=txt(T[i],x,B,{fill:'none',stroke:'url(#goldLine)','stroke-width':Math.max(1.4,1.1*u),'stroke-dasharray':dash,'stroke-linejoin':'round'},g.flow);
+      if(!reduceMotion)[glow,core].forEach(t=>t.animate([{strokeDashoffset:0},{strokeDashoffset:-90*u}],{duration:2600,iterations:Infinity,iterationStart:i*.37%1}));
+    });
+
+    // road roller
+    const roller=sv('g',{},svg);
+    sv('circle',{cx:5*u,cy:-4*u,r:4*u,fill:STEEL,stroke:'#8b9099','stroke-width':.6*u},roller);
+    sv('rect',{x:2*u,y:-11*u,width:17*u,height:6*u,rx:1.5*u,fill:GOLD},roller);
+    sv('rect',{x:4*u,y:-18*u,width:8*u,height:7*u,rx:1*u,fill:GOLD},roller);
+    sv('rect',{x:5.4*u,y:-16.6*u,width:5.2*u,height:3.6*u,rx:.6*u,fill:'#1b1c20'},roller);
+    sv('rect',{x:3*u,y:-19.2*u,width:10*u,height:1.4*u,rx:.5*u,fill:STEEL},roller);
+    const beacon=sv('circle',{cx:8*u,cy:-20.6*u,r:1*u,fill:'#ff6a13'},roller);
+    sv('rect',{x:16*u,y:-9*u,width:10*u,height:9*u,rx:4.5*u,fill:LIGHT,stroke:'#8b9099','stroke-width':.6*u},roller);
+    sv('line',{x1:19*u,y1:-8*u,x2:16*u,y2:-10*u,stroke:STEEL,'stroke-width':.8*u},roller);
+    beacon.animate([{opacity:1},{opacity:.2}],{duration:500,iterations:Infinity,direction:'alternate'});
+    g.roller=roller;
+
+    // tower crane, standing just right of the name
+    const crane=sv('g',{},svg), mx=W+6*u, mw=6*u, mastTop=jibY-14*u, base=roadTop+roadH;
+    const jx0=Math.max(0,xs[0]-2*u), jx1=mx+mw+18*u;
+    sv('rect',{x:mx,y:mastTop,width:mw,height:base-mastTop,fill:'none',stroke:GOLD,'stroke-width':.7*u},crane);
+    let zz=`M${mx} ${base}`;for(let y=base,k=0;y>mastTop;y-=mw,k++)zz+=` L${k%2?mx:mx+mw} ${y-mw}`;
+    sv('path',{d:zz,fill:'none',stroke:GOLD,'stroke-width':.5*u},crane);
+    sv('rect',{x:mx-3*u,y:base-2*u,width:mw+6*u,height:2.4*u,rx:.6*u,fill:STEEL},crane);
+    sv('rect',{x:jx0,y:jibY,width:jx1-jx0,height:4*u,fill:'none',stroke:GOLD,'stroke-width':.7*u},crane);
+    let jz=`M${jx0} ${jibY+4*u}`;for(let x=jx0,k=0;x<jx1;x+=4*u,k++)jz+=` L${Math.min(jx1,x+4*u)} ${k%2?jibY+4*u:jibY}`;
+    sv('path',{d:jz,fill:'none',stroke:GOLD,'stroke-width':.45*u},crane);
+    sv('path',{d:`M${mx} ${jibY} L${mx+mw/2} ${jibY-12*u} L${mx+mw} ${jibY}`,fill:'none',stroke:GOLD,'stroke-width':.7*u},crane);
+    sv('line',{x1:mx+mw/2,y1:jibY-12*u,x2:jx0+(mx-jx0)*.35,y2:jibY,stroke:LIGHT,'stroke-width':.35*u},crane);
+    sv('line',{x1:mx+mw/2,y1:jibY-12*u,x2:jx1,y2:jibY,stroke:LIGHT,'stroke-width':.35*u},crane);
+    sv('rect',{x:jx1-8*u,y:jibY+4*u,width:7*u,height:6*u,rx:.6*u,fill:'#8b9099'},crane);
+    sv('rect',{x:mx-7*u,y:jibY+4*u,width:7*u,height:6*u,rx:.8*u,fill:GOLD},crane);
+    sv('rect',{x:mx-6*u,y:jibY+5.4*u,width:4.6*u,height:2.6*u,rx:.4*u,fill:'#1b1c20'},crane);
+    const trolley=sv('g',{},crane);
+    sv('rect',{x:-3*u,y:jibY+4*u,width:6*u,height:2.6*u,rx:.5*u,fill:STEEL},trolley);
+    const Lend=(capTop-7.6*u)-(jibY+6.6*u);
+    const cable=sv('rect',{x:-.35*u,y:jibY+6.6*u,width:.7*u,height:Lend,fill:LIGHT},trolley);
+    cable.style.transformBox='fill-box';cable.style.transformOrigin='top';
+    Object.assign(g,{crane,trolley,cable,Lend,drop:Lend-5*u,mx});
+  }
+
+  function finalState(){
+    const g=G;
+    g.roller.remove();g.crane.remove();g.wire.forEach(w=>w.remove());
+    g.letters.forEach(l=>{l.rig.remove();l.style.opacity=1});
+    g.flow.setAttribute('opacity',1);
+    if(!reduceMotion)g.lane.animate([{strokeDashoffset:0},{strokeDashoffset:-9*g.u}],{duration:900,iterations:Infinity});
+    hero.classList.add('built');built=true;
+  }
+
+  function dust(x,y){
+    const u=G.u, svg=host.querySelector('svg');
+    for(let k=-1;k<=1;k++){
+      const c=sv('circle',{cx:x+k*4*u,cy:y,r:1.8*u,fill:'#d6d0c4','fill-opacity':.7},svg);
+      c.animate([{transform:'translate(0,0) scale(.6)',opacity:.8},{transform:`translate(${k*6*u}px,${-4*u}px) scale(1.8)`,opacity:0}],{duration:520,easing:'ease-out'}).onfinish=()=>c.remove();
+    }
+  }
+
+  async function construct(){
+    const g=G, {u,W,roadTop,letters,wire,trolley,cable,Lend,drop,crane}=g, fx={fill:'both'};
+    letters.forEach(l=>l.style.opacity=0);
+    wire.forEach(w=>w.style.opacity=0);
+    crane.style.opacity=0;
+    // 1. roller paves the road
+    g.road.style.transformBox='fill-box';g.road.style.transformOrigin='left';
+    g.road.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:1100,easing:'cubic-bezier(.45,0,.3,1)',...fx});
+    g.roller.animate([{transform:`translate(${-28*u}px,${roadTop}px)`},{transform:`translate(${W-26*u}px,${roadTop}px)`}],{duration:1100,easing:'cubic-bezier(.45,0,.3,1)',...fx});
+    // 2. blueprint outlines
+    wire.forEach((w,i)=>w.animate([{opacity:0},{opacity:1}],{duration:400,delay:250+i*70,...fx}));
+    await wait(700);
+    // 3. crane rises into place
+    crane.style.opacity=1;
+    await crane.animate([{transform:`translateY(${-40*u}px)`,opacity:0},{transform:'none',opacity:1}],{duration:500,easing:'cubic-bezier(.16,1,.3,1)',...fx}).finished;
+    g.roller.animate([{opacity:1},{opacity:0}],{duration:400,...fx});
+    let tx=g.mx-4*u;
+    for(const [i,l] of letters.entries()){
+      if(built)return;
+      await trolley.animate([{transform:`translateX(${tx}px)`},{transform:`translateX(${l.cx}px)`}],{duration:Math.min(320,120+Math.abs(tx-l.cx)*.5),easing:'ease-in-out',...fx}).finished;
+      tx=l.cx;
+      l.style.opacity=1;
+      cable.animate([{transform:`scaleY(${(Lend-drop)/Lend})`},{transform:'scaleY(1)'}],{duration:380,easing:'cubic-bezier(.3,.7,.4,1)',...fx});
+      await l.animate([{transform:`translateY(${-drop}px)`},{transform:'translateY(0)'}],{duration:380,easing:'cubic-bezier(.3,.7,.4,1)',...fx}).finished;
+      wire[i].animate([{opacity:1},{opacity:0}],{duration:250,...fx});
+      dust(l.cx,g.B+g.depth);
+      l.rig.animate([{opacity:1},{opacity:0}],{duration:160,...fx});
+      cable.animate([{transform:'scaleY(1)'},{transform:`scaleY(${(Lend-drop)/Lend})`}],{duration:160,...fx});
+      if(i===letters.length-3)hero.classList.add('built'); // start typing as the last letters land
+    }
+    await wait(150);
+    if(built)return;
+    await crane.animate([{opacity:1,transform:'none'},{opacity:0,transform:`translateY(${-30*u}px)`}],{duration:500,easing:'ease-in',...fx}).finished;
+    if(built)return;
+    g.flow.animate([{opacity:0},{opacity:1}],{duration:700,fill:'forwards'});
+    finalState();
+  }
+
+  let rt;
+  addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(!built)return;draw();finalState()},150)});
+  document.fonts.ready.then(()=>{
+    draw();
+    if(reduceMotion)return finalState();
+    construct().catch(()=>{if(!built){draw();finalState()}});
+    setTimeout(()=>{if(!built){draw();finalState()}},9000); // never leave the name half-built
+  });
+})();
+
+/* ---------- hero: featured project panel (facts from each project.json) ---------- */
+const featured=[
+  {t:'Mysuru Elevated Corridor',s:'Elevated flyovers & grade separators · DPR',l:'Mysore City Limits, Karnataka',text:'DPR',u:'URBAN',
+   scope:['Traffic surveys','Feasibility','Structural design','Pavement design','Land acquisition','BOQ & tender']},
+  {t:'NH-69 Sira – Byrenahalli',s:'4-lane widening · DPR · EPC',l:'Tumakuru District, Karnataka',n:52.6,dec:1,u:'KM CORRIDOR',
+   scope:['Survey','Alignment','Bypasses','DPR']},
+  {t:'SH-34 High-Level Bridge',s:'Dadgi River · Bhalki Taluka',l:'Bidar District, Karnataka',n:150,dec:0,u:'M BRIDGE',
+   scope:['Hydrology','Bridge design','Drawings','DPR']},
+  {t:'FWD Testing · CRIF 2026–27',s:'Pavement evaluation studies',l:'5 divisions, Karnataka',n:5,dec:0,u:'DIVISIONS',
+   scope:['FWD','NSV inventory','CBR','Reporting']}];
+const segs=document.querySelectorAll('.seg button');
+function showFeatured(i){
+  const d=featured[i];
+  segs.forEach(b=>{const on=+b.dataset.i===i;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+  $('p-title').textContent=d.t;$('p-sub').textContent=d.s;$('p-loc').textContent=d.l;$('p-unit').textContent=d.u;
+  if(!reduceMotion)$('ring').animate([{strokeDashoffset:264},{strokeDashoffset:0}],{duration:1400,easing:'cubic-bezier(.16,1,.3,1)'});
+  $('p-scope').replaceChildren(...d.scope.map((s,k)=>el('span',{style:`animation-delay:${k*90}ms`},s)));
+  const e=$('p-num');
+  if(d.text||reduceMotion){e.textContent=d.text||d.n.toFixed(d.dec);return}
+  let t0;const f=t=>{t0??=t;const q=Math.min((t-t0)/1200,1);e.textContent=(d.n*(1-Math.pow(1-q,4))).toFixed(d.dec);if(q<1)requestAnimationFrame(f)};requestAnimationFrame(f);
+}
+segs.forEach(b=>b.addEventListener('click',()=>showFeatured(+b.dataset.i)));
+showFeatured(0);
+
+/* ---------- services filter + process rail ---------- */
+document.querySelectorAll('#filters button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#filters button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.svc').forEach(s=>s.classList.toggle('hide',b.dataset.f!=='all'&&!s.dataset.c.includes(b.dataset.f)));
+}));
+new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){$('rail').style.width='calc(100% - 6px)';o.disconnect()}}),{threshold:.4}).observe($('steps'));
+
+/* =========================================================
+   CONTENT DISCOVERY
+========================================================= */
+// Returns [{path, name, url}] for every file in images/, projects/, careers/
+async function getFileList(){
+  const C=window.VISTAARA_CONTENT;
+  if(C&&Array.isArray(C.files))return C.files.map(p=>({path:p,name:p.split('/').pop(),url:encPath(p)}));
+  return getGitHubTree();
+}
+async function getGitHubTree(){
+  let cached=null;
+  try{cached=JSON.parse(localStorage.getItem(TREE_CACHE.key)||'null')}catch{}
+  if(cached&&Date.now()-cached.t<TREE_CACHE.ms)return cached.tree;
+  const raw=p=>`https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}/${GITHUB.branch}/${encPath(p)}`;
+  try{
+    const r=await fetch(`https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/git/trees/${GITHUB.branch}?recursive=1`,{headers:{Accept:'application/vnd.github+json'}});
+    if(!r.ok)throw new Error('GitHub '+r.status);
+    const tree=(await r.json()).tree.filter(i=>i.type==='blob'&&/^(images|projects|careers)\//i.test(i.path)).map(i=>({path:i.path,name:i.path.split('/').pop(),url:raw(i.path)}));
+    try{localStorage.setItem(TREE_CACHE.key,JSON.stringify({t:Date.now(),tree}))}catch{}
+    return tree;
+  }catch(err){console.warn('Could not list content:',err);return cached?cached.tree:[]}
+}
+// Fresh copy of a project.json / job.json; falls back to the copy stored in content.js (e.g. when opened from disk)
+async function readJson(file){
+  try{const r=await fetch(file.url,{cache:'no-cache'});if(r.ok)return await r.json()}catch{}
+  return window.VISTAARA_CONTENT?.data?.[file.path]??null;
+}
+function folders(files,prefix){
+  const map=new Map();
+  files.forEach(f=>{if(!f.path.toLowerCase().startsWith(prefix))return;const parts=f.path.slice(prefix.length).split('/');if(parts.length>=2&&parts[0])map.set(parts[0].toLowerCase(),parts[0])});
+  return [...map.values()].sort(byName).map(name=>({name,files:files.filter(f=>f.path.toLowerCase().startsWith((prefix+name+'/').toLowerCase()))}));
+}
+
+/* ---------- About: photo frame + video frame ---------- */
+function mediaFrame(frame,stack,dots,tag,prevBtn,nextBtn,nodes,labels,{video=false,delay=3500}={}){
+  if(!nodes.length){frame.hidden=true;return}
+  stack.prepend(...nodes);dots.append(...nodes.map(()=>el('i')));
+  if(nodes.length<2){prevBtn.hidden=nextBtn.hidden=true}
+  let cur=-1,timer,visible=false,hover=false;
+  const schedule=()=>{clearTimeout(timer);if(!video&&visible&&!hover&&!reduceMotion&&nodes.length>1)timer=setTimeout(()=>go(cur+1),delay)};
+  function go(n){
+    clearTimeout(timer);
+    if(cur>=0){nodes[cur].classList.remove('on');dots.children[cur].classList.remove('on');if(video)nodes[cur].pause()}
+    cur=(n+nodes.length)%nodes.length;const m=nodes[cur];
+    m.classList.add('on');dots.children[cur].classList.add('on');tag.textContent=labels[cur];
+    if(video){m.currentTime=0;if(visible)m.play().catch(()=>{});m.onended=()=>hover||nodes.length<2?m.play().catch(()=>{}):go(cur+1)}
+    else schedule();
+  }
+  stack.addEventListener('mouseenter',()=>{hover=true;clearTimeout(timer)});
+  stack.addEventListener('mouseleave',()=>{hover=false;schedule()});
+  prevBtn.addEventListener('click',()=>go(cur-1));nextBtn.addEventListener('click',()=>go(cur+1));
+  new IntersectionObserver(([e])=>{visible=e.isIntersecting;
+    if(cur<0){if(visible)go(0);return}
+    if(video)visible?nodes[cur].play().catch(()=>{}):nodes[cur].pause();else visible?schedule():clearTimeout(timer)},{threshold:.3}).observe(stack);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&video&&cur>=0)nodes[cur].pause()});
+}
+
+/* ---------- auto-sliding strips with prev / next; stop while the cursor is on a photo ---------- */
+const sliders={};
+function slider(id,items){
+  const s=$(id), track=s.querySelector('.slide-track');
+  if(!items.length)return false;
+  track.append(...items,...items.map(n=>{const c=n.cloneNode(true);c.setAttribute('aria-hidden','true');return c}));
+  const st={x:0,speed:reduceMotion?0:(+s.dataset.speed||40),visible:false,hover:false,nudge:null};
+  sliders[id]=st;
+  const half=()=>track.scrollWidth/2;
+  const step=()=>{const c=track.children[0];return c?c.offsetWidth+24:300};
+  st.move=dir=>{st.nudge={from:st.x,to:st.x+dir*step(),t0:null}};
+  track.addEventListener('pointerover',e=>{st.hover=!!e.target.closest('.mate,.shot')});
+  track.addEventListener('pointerout',e=>{if(!e.relatedTarget||!e.relatedTarget.closest?.('.mate,.shot'))st.hover=false});
+  new IntersectionObserver(([e])=>st.visible=e.isIntersecting,{threshold:.1}).observe(s);
+  let last=performance.now();
+  const loop=now=>{
+    const dt=Math.min((now-last)/1000,.05);last=now;
+    if(st.nudge){const n=st.nudge;n.t0??=now;const p=Math.min((now-n.t0)/650,1);st.x=n.from+(n.to-n.from)*(1-Math.pow(1-p,3));if(p===1)st.nudge=null}
+    else if(st.visible&&!st.hover)st.x+=st.speed*dt;
+    const h=half();if(h)st.x=((st.x%h)+h)%h;
+    track.style.transform=`translateX(${-st.x}px)`;
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+  return true;
+}
+document.querySelectorAll('.sl-btn[data-for]').forEach(b=>b.addEventListener('click',()=>sliders[b.dataset.for]?.move(+b.dataset.dir)));
+
+/* ---------- media from images/ ---------- */
+const titleCase=s=>s.split(/\s+/).map(w=>w.length<=2?w.toUpperCase():w[0].toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+function parseEmployee(file){
+  const m=stripExt(file.name).match(/^Employee[_\s-]*(\d+)[_\-\s]+(.+)$/i);
+  if(!m)return null;
+  const parts=m[2].split('_').map(p=>p.trim()).filter(Boolean);
+  if(!parts.length)return null;
+  const name=titleCase(parts.shift().replace(/^(mr|mrs|ms|dr)\.?\s+/i,''));
+  return {number:+m[1],name,designation:parts.join(' ')||'Team Member',file};
+}
+const prettyLabel=n=>stripExt(n).replace(/[_]+/g,' ');
+
+function initMedia(files){
+  const top=files.filter(f=>/^images\/[^/]+$/i.test(f.path));
+  const photos=top.filter(f=>isImage(f.name)&&/project discussion|team photo/.test(norm(f.name))).sort((a,b)=>byName(a.name,b.name));
+  const videos=top.filter(f=>isVideo(f.name)&&norm(f.name).includes('video')).sort((a,b)=>byName(a.name,b.name));
+  const crew=top.filter(f=>isImage(f.name)).map(parseEmployee).filter(Boolean).sort((a,b)=>a.number-b.number||byName(a.file.name,b.file.name));
+  const gallery=top.filter(f=>isImage(f.name)&&norm(f.name).startsWith('gallery')).sort((a,b)=>byName(a.name,b.name));
+  const teamPhotos=photos.filter(f=>norm(f.name).includes('team photo')), talks=photos.filter(f=>norm(f.name).includes('project discussion'));
+  const galB=[];for(let i=0;i<Math.max(teamPhotos.length,talks.length);i++){teamPhotos[i]&&galB.push(teamPhotos[i]);talks[i]&&galB.push(talks[i])}
+
+  mediaFrame($('photo-frame'),$('photo-stack'),$('photo-dots'),$('photo-tag'),$('photo-prev'),$('photo-next'),
+    photos.map(f=>el('img',{src:f.url,alt:prettyLabel(f.name),loading:'lazy',decoding:'async'})),photos.map(f=>prettyLabel(f.name)));
+  mediaFrame($('video-frame'),$('video-stack'),$('video-dots'),$('video-tag'),$('video-prev'),$('video-next'),
+    videos.map(f=>{const v=el('video',{src:f.url,playsinline:'',preload:'metadata'});v.muted=true;return v}),
+    videos.map((f,i)=>`Video ${i+1} · ${prettyLabel(f.name).replace(/^Video \d+\s*/i,'')}`),{video:true});
+
+  if(!slider('crew',crew.map(p=>el('div',{class:'mate raise'},el('img',{src:p.file.url,alt:`${p.name}, ${p.designation}`,loading:'lazy',decoding:'async'}),el('b',{},p.name),el('span',{},p.designation)))))$('crew-block').hidden=true;
+  if(!slider('gal-a',gallery.map((f,i)=>el('div',{class:`shot raise${i%3===1?' tall':''}`},el('img',{src:f.url,alt:'Vistaara gallery photo',loading:'lazy',decoding:'async'})))))$('gal-a').hidden=true;
+  if(!slider('gal-b',galB.map((f,i)=>el('div',{class:`shot raise${i%4===2?' tall':''}`},el('img',{src:f.url,alt:prettyLabel(f.name),loading:'lazy',decoding:'async'})))))$('gal-b-block').hidden=true;
+  setStat('stat-team',crew.length+2); // engineering team + the two leaders
+}
+
+/* ---------- Projects: featured:true (by order, max 5) on top, the rest under More projects ---------- */
+async function initProjects(files){
+  const list=(await Promise.all(folders(files,'projects/').map(async dir=>{
+    const jf=dir.files.find(f=>f.name.toLowerCase()==='project.json');if(!jf)return null;
+    const p=await readJson(jf);
+    if(!p||!['title','category','description','image'].every(k=>typeof p[k]==='string'&&p[k].trim())){console.warn('Skipping project',dir.name);return null}
+    const img=dir.files.find(f=>f.name.toLowerCase()===p.image.trim().toLowerCase());
+    if(!img){console.warn(`Skipping project ${dir.name}: image "${p.image}" not found`);return null}
+    return {...p,folder:dir.name,img:img.url,featured:p.featured===true,order:Number.isFinite(+p.order)&&p.order!==''?+p.order:Infinity};
+  }))).filter(Boolean).sort((a,b)=>a.order-b.order||byName(a.folder,b.folder));
+
+  const feat=list.filter(p=>p.featured), top=feat.slice(0,5), rest=[...feat.slice(5),...list.filter(p=>!p.featured)];
+  const grid=$('featured-grid');
+  top.forEach((p,i)=>grid.append(
+    el('article',{class:`proj raise reveal${i<2?' big':''}`},
+      el('div',{class:'ph'},el('img',{src:p.img,alt:p.title,loading:'lazy',decoding:'async'}),el('span',{class:'badge'},`P—${String(Number.isFinite(p.order)?p.order:i+1).padStart(2,'0')} · ${p.category}`)),
+      el('div',{class:'meta'},el('div',{},el('span',{class:'loc mono'},p.location||''),el('h3',{},p.title)),el('span',{class:'go raise','aria-hidden':'true'},'↗')))));
+  rest.forEach(p=>$('more-list').append(
+    el('article',{class:'mp'},el('img',{src:p.img,alt:p.title,loading:'lazy',decoding:'async'}),
+      el('div',{},el('span',{class:'loc mono o'},p.category),el('h4',{},p.title),el('p',{},p.description)))));
+  $('more').hidden=!rest.length;
+  $('projects-empty').hidden=list.length>0;
+  setStat('stat-projects',list.length);
+  watchReveals(grid);
+}
+$('more-toggle').addEventListener('click',()=>{
+  const open=$('more').classList.toggle('open');
+  $('more-toggle').setAttribute('aria-expanded',open);
+  $('more-toggle').querySelector('.lbl').textContent=open?'Show less':'View more';
 });
+
+/* ---------- Careers: sorted by order; closed positions shown but not expandable ---------- */
+async function initCareers(files){
+  const required=['title','count','status','details','software','qualification','description','email'];
+  const jobs=(await Promise.all(folders(files,'careers/').map(async dir=>{
+    const jf=dir.files.find(f=>f.name.toLowerCase()==='job.json');if(!jf)return null;
+    const j=await readJson(jf);
+    const ok=j&&required.every(k=>k==='details'?Array.isArray(j.details)&&j.details.length:typeof j[k]==='string'&&j[k].trim())&&['open','closed'].includes(j.status.toLowerCase());
+    if(!ok){console.warn('Skipping career position',dir.name);return null}
+    return {...j,status:j.status.toLowerCase(),folder:dir.name,order:Number.isFinite(+j.order)?+j.order:Infinity};
+  }))).filter(Boolean).sort((a,b)=>a.order-b.order||byName(a.folder,b.folder));
+
+  const listEl=$('careers-list');
+  jobs.forEach((j,i)=>{
+    const closed=j.status==='closed', bodyId=`job-body-${i}`;
+    const pm=el('span',{class:'pm raise','aria-hidden':'true'},closed?'–':'+');
+    const head=el('button',{class:'job-head',type:'button','aria-expanded':'false','aria-controls':bodyId,...(closed?{'aria-disabled':'true'}:{})},
+      el('div',{},el('span',{class:'mono'},j.positionLabel||`POSITION ${String(i+1).padStart(2,'0')}`),el('h3',{},j.title),el('span',{class:'cnt'},j.count)),
+      el('span',{class:`badge-s ${closed?'closed':'open'}`},closed?'CLOSED':'OPEN'),pm);
+    const email=/^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i.test(j.email)?j.email:'info@vistaarainfra.com';
+    const apply=el('a',{class:'btn btn-orange',href:`mailto:${email}?subject=${encodeURIComponent('Application - '+j.title)}`},'Apply for this position ',el('span',{class:'ar'},'→'));
+    const body=el('div',{class:'job-body',id:bodyId},el('div',{},el('div',{class:'job-inner'},
+      el('div',{},el('h4',{},'Responsibilities'),el('ul',{},j.details.map(d=>el('li',{},String(d))))),
+      el('div',{},el('h4',{},'Software'),el('div',{class:'chips'},j.software.split('|').map(s=>el('span',{},s.trim())))),
+      el('div',{},el('h4',{},'Qualification'),el('p',{},j.qualification)),
+      el('p',{},j.description),
+      el('div',{class:'job-foot'},el('span',{class:'mono muted'},j.location?'📍 '+j.location:''),apply))));
+    const card=el('article',{class:`job raise reveal${closed?' closed':''}`},head,body);
+    if(!closed)head.addEventListener('click',()=>{const open=card.classList.toggle('open');head.setAttribute('aria-expanded',open);pm.textContent=open?'−':'+'});
+    listEl.append(card);
+  });
+  $('career-empty').hidden=jobs.length>0;
+  watchReveals(listEl);
+}
+
+getFileList().then(files=>Promise.all([initMedia(files),initProjects(files),initCareers(files)])).catch(err=>console.error('Content failed to load:',err));
+
+/* ---------- contact form → prepared email for the visitor to review and send ---------- */
+const form=$('contact-form'), note=$('form-note');
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  if(!form.checkValidity()){form.reportValidity();note.textContent='Please fill in your name, a valid email and your message.';note.classList.add('err');return}
+  const v=k=>String(new FormData(form).get(k)||'').trim();
+  const body=[`Name: ${v('name')}`,`Work email: ${v('email')}`,`Organization: ${v('organization')||'Not provided'}`,`Phone: ${v('phone')||'Not provided'}`,'','How can we help?',v('message')].join('\n');
+  location.href=`mailto:info@vistaarainfra.com?subject=${encodeURIComponent('Project Enquiry – Vistaara Infra Consultants')}&body=${encodeURIComponent(body)}`;
+  note.classList.remove('err');note.textContent='Your email app should open with the enquiry ready — please review it and press Send.';
+});
+
+$('year').textContent=new Date().getFullYear();
+})();
