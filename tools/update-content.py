@@ -20,7 +20,8 @@ for folder in FOLDERS:
     base = ROOT / folder
     if not base.is_dir():
         continue
-    for path in sorted(base.rglob("*")):
+    # sort by the text path so Windows and the GitHub Action give the same order
+    for path in sorted(base.rglob("*"), key=lambda p: p.relative_to(ROOT).as_posix()):
         if not path.is_file() or path.name.startswith("."):
             continue
         rel = path.relative_to(ROOT).as_posix()
